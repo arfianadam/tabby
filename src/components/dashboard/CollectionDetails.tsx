@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBookmark,
-  faExternalLink,
   faFolder,
   faFolderOpen,
   faPlus,
@@ -195,7 +194,7 @@ const CollectionDetails = ({
                               className="block h-full rounded-2xl p-4 pr-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                             >
                               <div className="flex flex-col gap-2">
-                                <div className="flex items-start gap-3">
+                                <div className="flex items-start gap-2">
                                   <span className="h-6 w-6 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                                     {faviconSrc ? (
                                       <img
@@ -210,15 +209,9 @@ const CollectionDetails = ({
                                       </span>
                                     )}
                                   </span>
-                                  <p className="text-base font-semibold text-slate-900 transition group-hover:text-indigo-600 line-clamp-2">
+                                  <p className="mt-0.5 text-sm font-semibold text-slate-900 transition group-hover:text-indigo-600 line-clamp-2">
                                     {bookmark.title}
                                   </p>
-                                </div>
-                                <div className="flex items-center gap-1 text-xs text-slate-500">
-                                  <FontAwesomeIcon icon={faExternalLink} />
-                                  <span className="line-clamp-1 break-all flex-1">
-                                    {bookmark.url}
-                                  </span>
                                 </div>
                                 {bookmark.note && (
                                   <p className="text-sm text-slate-700">
@@ -228,7 +221,7 @@ const CollectionDetails = ({
                               </div>
                             </a>
                             <button
-                              className="absolute right-3 top-3 z-10 rounded-full text-slate-400 hover:bg-rose-50 cursor-pointer hover:text-rose-600 h-6 w-6 flex items-center justify-center"
+                              className="absolute right-4 top-4 z-10 rounded-full text-slate-400 hover:bg-rose-50 cursor-pointer hover:text-rose-600 h-6 w-6 flex items-center justify-center"
                               type="button"
                               onClick={() =>
                                 onDeleteBookmark(folder.id, bookmark.id)
