@@ -11,12 +11,12 @@ import {
   deleteFolder,
 } from '../services/collections'
 import type { Collection, Folder } from '../types'
-import { getActiveTabInfo, hasChromeTabsSupport } from '../utils/chrome'
 import CollectionDetails from './dashboard/CollectionDetails'
 import CollectionsSidebar from './dashboard/CollectionsSidebar'
 import DashboardHeader from './dashboard/DashboardHeader'
 import DashboardToasts from './dashboard/DashboardToasts'
 import { panelClass, type ToastTone } from './dashboard/constants'
+import { hasChromeTabsSupport } from '../utils/chrome'
 
 export type BannerTone = ToastTone
 
@@ -42,20 +42,22 @@ type DashboardProps = {
   initialCollections?: Collection[]
 }
 
+const getInitialBookmarkFormState = (): BookmarkFormState => ({
+  title: '',
+  url: '',
+  note: '',
+})
+
 const Dashboard = ({ user, allowSync, initialCollections = [] }: DashboardProps) => {
   const { collections, loading, error } = useCollections(allowSync ? user.uid : undefined, {
     initialData: initialCollections,
     cacheKey: allowSync ? user.uid : undefined,
   })
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null)
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const [newCollection, setNewCollection] = useState('')
   const [newFolder, setNewFolder] = useState('')
-  const [bookmarkForm, setBookmarkForm] = useState<BookmarkFormState>({
-    title: '',
-    url: '',
-    note: '',
-  })
+  const [bookmarkForm, setBookmarkForm] = useState<BookmarkFormState>(getInitialBookmarkFormState)
+  const [bookmarkModalFolderId, setBookmarkModalFolderId] = useState<string | null>(null)
   const [creatingCollection, setCreatingCollection] = useState(false)
   const [creatingFolder, setCreatingFolder] = useState(false)
   const [savingBookmark, setSavingBookmark] = useState(false)
@@ -84,30 +86,9 @@ const Dashboard = ({ user, allowSync, initialCollections = [] }: DashboardProps)
   )
 
   useEffect(() => {
-    if (!selectedCollection) {
-      setSelectedFolderId(null)
-      return
-    }
-    if (
-      !selectedFolderId ||
-      !selectedCollection.folders.some((folder) => folder.id === selectedFolderId)
-    ) {
-      setSelectedFolderId(selectedCollection.folders[0]?.id ?? null)
-    }
-  }, [selectedCollection, selectedFolderId])
-
-  const selectedFolder = useMemo(
-    () => selectedCollection?.folders.find((folder) => folder.id === selectedFolderId) ?? null,
-    [selectedCollection, selectedFolderId],
-  )
-
-  useEffect(() => {
-    setBookmarkForm({
-      title: '',
-      url: '',
-      note: '',
-    })
-  }, [selectedFolderId])
+    setBookmarkModalFolderId(null)
+    setBookmarkForm(getInitialBookmarkFormState())
+  }, [selectedCollectionId])
 
   const handleBookmarkFormChange = (field: keyof BookmarkFormState, value: string) => {
     setBookmarkForm((prev) => ({
@@ -130,10 +111,25 @@ const Dashboard = ({ user, allowSync, initialCollections = [] }: DashboardProps)
     return false
   }
 
+  const closeBookmarkModal = () => {
+    setBookmarkModalFolderId(null)
+    setBookmarkForm(getInitialBookmarkFormState())
+  }
+
+  const openBookmarkModal = (folderId: string) => {
+    if (!selectedCollection || guardSync()) {
+      return
+    }
+    setBookmarkModalFolderId(folderId)
+    setBookmarkForm(getInitialBookmarkFormState())
+  }
+
   useEffect(() => {
     if (!allowSync) {
       wasRestoringRef.current = true
       setSyncToastVisible(false)
+      setBookmarkModalFolderId(null)
+      setBookmarkForm(getInitialBookmarkFormState())
       return
     }
     if (wasRestoringRef.current && allowSync) {
@@ -229,25 +225,35 @@ const Dashboard = ({ user, allowSync, initialCollections = [] }: DashboardProps)
     }
   }
 
-  const handleAddBookmark = async (event: React.FormEvent) => {
-    event.preventDefault()
+  const saveBookmarkToFolder = async (
+    folderId: string,
+    bookmarkData: BookmarkFormState,
+    options: { closeModal?: boolean } = {},
+  ) => {
+    const { closeModal = false } = options
     if (!selectedCollection || guardSync()) {
       notify('Create or select a collection first.', 'danger')
       return
     }
-    if (!selectedFolder) {
-      notify('Create or select a folder before saving a bookmark.', 'danger')
+    const folder = selectedCollection.folders.find((entry) => entry.id === folderId)
+    if (!folder) {
+      notify('The selected folder is no longer available.', 'danger')
+      closeBookmarkModal()
       return
     }
-    if (!bookmarkForm.url.trim()) {
+    if (!bookmarkData.url.trim()) {
       notify('Provide a URL before saving a bookmark.', 'danger')
       return
     }
     setSavingBookmark(true)
     try {
-      await addBookmarkToFolder(user.uid, selectedCollection.id, selectedFolder.id, bookmarkForm)
-      setBookmarkForm({ title: '', url: '', note: '' })
+      await addBookmarkToFolder(user.uid, selectedCollection.id, folder.id, bookmarkData)
       notify('Bookmark saved.', 'success')
+      if (closeModal) {
+        closeBookmarkModal()
+      } else {
+        setBookmarkForm(getInitialBookmarkFormState())
+      }
     } catch (err) {
       notify(err instanceof Error ? err.message : 'Unable to save bookmark.', 'danger')
     } finally {
@@ -255,38 +261,23 @@ const Dashboard = ({ user, allowSync, initialCollections = [] }: DashboardProps)
     }
   }
 
-  const handleDeleteBookmark = async (bookmarkId: string) => {
-    if (!selectedCollection || !selectedFolder || guardSync()) {
+  const handleAddBookmark = async (
+    event: React.FormEvent,
+    folderId: string,
+  ) => {
+    event.preventDefault()
+    await saveBookmarkToFolder(folderId, bookmarkForm, { closeModal: true })
+  }
+
+  const handleDeleteBookmark = async (folderId: string, bookmarkId: string) => {
+    if (!selectedCollection || guardSync()) {
       return
     }
     try {
-      await deleteBookmarkFromFolder(user.uid, selectedCollection.id, selectedFolder.id, bookmarkId)
+      await deleteBookmarkFromFolder(user.uid, selectedCollection.id, folderId, bookmarkId)
       notify('Bookmark removed.', 'info')
     } catch (err) {
       notify(err instanceof Error ? err.message : 'Unable to delete bookmark.', 'danger')
-    }
-  }
-
-  const hydrateWithCurrentTab = async () => {
-    if (guardSync()) {
-      return
-    }
-    if (!hasChromeTabsSupport) {
-      notify('Chrome tab access is only available in the extension build.', 'info')
-      return
-    }
-    try {
-      const activeTab = await getActiveTabInfo()
-      setBookmarkForm((prev) => ({
-        ...prev,
-        title: activeTab.title,
-        url: activeTab.url,
-      }))
-    } catch (err) {
-      notify(
-        err instanceof Error ? err.message : 'Unable to read the currently active tab.',
-        'danger',
-      )
     }
   }
 
@@ -299,7 +290,7 @@ const Dashboard = ({ user, allowSync, initialCollections = [] }: DashboardProps)
   return (
     <div className="h-full flex flex-col gap-2 p-3 overflow-hidden">
       <DashboardHeader allowSync={allowSync} user={user} onSignOut={handleSignOut} />
-      <div className="grow grid gap-2 lg:grid-cols-[260px,1fr] min-h-0 items-stretch">
+      <div className="grow grid gap-2 grid-cols-[260px_1fr] min-h-0 items-stretch">
         <CollectionsSidebar
           allowSync={allowSync}
           collections={collections}
@@ -316,21 +307,20 @@ const Dashboard = ({ user, allowSync, initialCollections = [] }: DashboardProps)
         {selectedCollection ? (
           <CollectionDetails
             collection={selectedCollection}
-            selectedFolder={selectedFolder}
-            selectedFolderId={selectedFolderId}
             allowSync={allowSync}
             onDeleteCollection={handleDeleteCollection}
-            onSelectFolder={setSelectedFolderId}
             newFolder={newFolder}
             onNewFolderChange={setNewFolder}
             creatingFolder={creatingFolder}
             onCreateFolder={handleCreateFolder}
             onDeleteFolder={handleDeleteFolder}
+            onOpenBookmarkModal={openBookmarkModal}
+            onCloseBookmarkModal={closeBookmarkModal}
+            bookmarkModalFolderId={bookmarkModalFolderId}
             bookmarkForm={bookmarkForm}
             onBookmarkFormChange={handleBookmarkFormChange}
             onAddBookmark={handleAddBookmark}
             savingBookmark={savingBookmark}
-            onUseCurrentTab={hydrateWithCurrentTab}
             hasChromeTabsSupport={hasChromeTabsSupport}
             onDeleteBookmark={handleDeleteBookmark}
           />

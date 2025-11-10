@@ -2,14 +2,14 @@
 
 This project is a Manifest V3 Chrome extension built with Vite + React. It recreates the core experience of [gettoby.com](https://www.gettoby.com/): organise browsing into collections → folders → bookmarks while syncing everything to Firebase (Firestore + Email/Password auth).
 
-The popup handles authentication, invitation-only sign up, and a real-time UI for capturing the current tab or adding manual bookmarks. All data is stored under `users/{uid}/collections/*` in Firestore so that every signed-in browser sees the same state.
+The popup handles authentication, invitation-only sign up, and a real-time UI for listing the current window's tabs or adding manual bookmarks. All data is stored under `users/{uid}/collections/*` in Firestore so that every signed-in browser sees the same state.
 
 ## Features
 
 - Invitation-only registration enforced before creating a Firebase Auth user.
 - Email/password login with persistent Firebase sessions.
 - Realtime Firestore sync for collections, folders, and bookmarks (stored as nested arrays per collection).
-- Quick-save of the active tab (requires the built extension so the Tabs API is available).
+- Current-window tab list for quickly capturing a page into any folder (requires the built extension so the Tabs API is available).
 - Manual folder + bookmark management with inline forms and destructive action confirmations.
 - Responsive popup layout tailored for the Chrome extension window.
 - Overrides the Chrome new tab page so the Tabby dashboard always appears in every new tab.
@@ -43,7 +43,7 @@ The popup handles authentication, invitation-only sign up, and a real-time UI fo
 
 ## Development
 
-The popup can be previewed in the browser with Vite. Chrome-specific APIs (capturing the active tab) are automatically disabled in this mode.
+The popup can be previewed in the browser with Vite. Chrome-specific APIs (tab listing) are automatically disabled in this mode.
 
 ```bash
 npm install
@@ -79,4 +79,4 @@ This produces `dist/`, which Chrome can load:
 
 - The suggested Firestore rule above ensures users can only read/write their own workspace. Without it, any authenticated user would be able to reach other documents.
 - Collections store folders and bookmarks as nested arrays to keep reads/writes small—perfect for the Firebase free tier. If you outgrow this, refactor to subcollections without touching the UI layer.
-- The Chrome Tabs API only works when the built extension runs. During `npm run dev`, that button is disabled with a hint explaining why.
+- Chrome Tabs API functionality (the tab list inside the bookmark modal) is only available when the built extension runs; during `npm run dev` it will stay hidden.

@@ -134,7 +134,7 @@ const AuthGate = () => {
 
   const cachedCollections = useMemo(
     () => (workspaceUser ? getCachedCollections(workspaceUser.uid) : []),
-    [workspaceUser?.uid],
+    [workspaceUser],
   )
 
   if (isColdStart) {

@@ -4,7 +4,6 @@ import {
   faExternalLink,
   faFolder,
   faFolderOpen,
-  faLaptopCode,
   faPlus,
   faSpinner,
   faTrash,
@@ -18,110 +17,72 @@ import {
   panelClass,
   subtleButtonClasses,
 } from './constants'
+import AddBookmarkModal from './AddBookmarkModal'
 
 type CollectionDetailsProps = {
   collection: Collection
-  selectedFolder: Folder | null
-  selectedFolderId: string | null
   allowSync: boolean
   onDeleteCollection: (collection: Collection) => void
-  onSelectFolder: (folderId: string) => void
   newFolder: string
   onNewFolderChange: (value: string) => void
   creatingFolder: boolean
   onCreateFolder: (event: React.FormEvent<HTMLFormElement>) => void
   onDeleteFolder: (folder: Folder) => void
+  onOpenBookmarkModal: (folderId: string) => void
+  onCloseBookmarkModal: () => void
+  bookmarkModalFolderId: string | null
   bookmarkForm: BookmarkFormState
   onBookmarkFormChange: (field: keyof BookmarkFormState, value: string) => void
-  onAddBookmark: (event: React.FormEvent<HTMLFormElement>) => void
+  onAddBookmark: (event: React.FormEvent<HTMLFormElement>, folderId: string) => void
   savingBookmark: boolean
-  onUseCurrentTab: () => void
   hasChromeTabsSupport: boolean
-  onDeleteBookmark: (bookmarkId: string) => void
+  onDeleteBookmark: (folderId: string, bookmarkId: string) => void
 }
 
 const CollectionDetails = ({
   collection,
-  selectedFolder,
-  selectedFolderId,
   allowSync,
   onDeleteCollection,
-  onSelectFolder,
   newFolder,
   onNewFolderChange,
   creatingFolder,
   onCreateFolder,
   onDeleteFolder,
+  onOpenBookmarkModal,
+  onCloseBookmarkModal,
+  bookmarkModalFolderId,
   bookmarkForm,
   onBookmarkFormChange,
   onAddBookmark,
   savingBookmark,
-  onUseCurrentTab,
   hasChromeTabsSupport,
   onDeleteBookmark,
-}: CollectionDetailsProps) => (
-  <section className={`${panelClass} min-h-0`}>
-    <div className="flex flex-col gap-4 h-full overflow-hidden">
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900">{collection.name}</h2>
-          <p className="text-sm text-slate-500">
-            {collection.folders.length} folder{collection.folders.length === 1 ? '' : 's'} synced to
-            the cloud.
-          </p>
+}: CollectionDetailsProps) => {
+  const activeBookmarkFolder =
+    collection.folders.find((folder) => folder.id === bookmarkModalFolderId) ?? null
+
+  return (
+    <section className={`${panelClass} min-h-0`}>
+      <div className="flex flex-col gap-4 h-full overflow-hidden">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900">{collection.name}</h2>
+            <p className="text-sm text-slate-500">
+              {collection.folders.length} folder{collection.folders.length === 1 ? '' : 's'} synced to
+              the cloud.
+            </p>
+          </div>
+          <button
+            className={`${subtleButtonClasses} text-rose-600 hover:text-rose-700`}
+            type="button"
+            onClick={() => onDeleteCollection(collection)}
+            disabled={!allowSync}
+          >
+            <FontAwesomeIcon icon={faTrash} className="mr-2" />
+            Delete collection
+          </button>
         </div>
-        <button
-          className={`${subtleButtonClasses} text-rose-600 hover:text-rose-700`}
-          type="button"
-          onClick={() => onDeleteCollection(collection)}
-          disabled={!allowSync}
-        >
-          <FontAwesomeIcon icon={faTrash} className="mr-2" />
-          Delete collection
-        </button>
-      </div>
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
-        <div className="flex flex-wrap items-center gap-2">
-          {collection.folders.map((folder) => {
-            const isActive = folder.id === selectedFolderId
-            return (
-              <button
-                key={folder.id}
-                type="button"
-                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition ${
-                  isActive
-                    ? 'border-indigo-300 bg-indigo-50 text-indigo-900'
-                    : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                }`}
-                onClick={() => onSelectFolder(folder.id)}
-              >
-                <FontAwesomeIcon
-                  icon={isActive ? faFolderOpen : faFolder}
-                  className="text-base"
-                />
-                <span>{folder.name}</span>
-                <span className="flex items-center gap-1 text-xs text-slate-400">
-                  <FontAwesomeIcon icon={faBookmark} />
-                  {folder.bookmarks.length}
-                </span>
-                <span
-                  role="button"
-                  className="text-slate-400"
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    onDeleteFolder(folder)
-                  }}
-                >
-                  <FontAwesomeIcon icon={faTrash} />
-                </span>
-              </button>
-            )
-          })}
-          {collection.folders.length === 0 && (
-            <p className="text-sm text-slate-500">No folders yet. Add one to start saving bookmarks.</p>
-          )}
-        </div>
-        <form className="flex-1 space-y-1" onSubmit={onCreateFolder}>
+        <form className="space-y-1" onSubmit={onCreateFolder}>
           <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             New folder
           </label>
@@ -147,124 +108,112 @@ const CollectionDetails = ({
             </button>
           </div>
         </form>
-      </div>
-      {selectedFolder ? (
-        <div className="grow flex flex-col gap-4 min-h-0">
-          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-4">
-            <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-              <FontAwesomeIcon icon={faBookmark} className="text-indigo-500" />
-              Add bookmark to {selectedFolder.name}
-            </h3>
-            <form className="mt-3 space-y-3" onSubmit={onAddBookmark}>
-              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-                Title
-                <input
-                  type="text"
-                  value={bookmarkForm.title}
-                  onChange={(event) => onBookmarkFormChange('title', event.target.value)}
-                  placeholder="Ex: Great GTM playbook"
-                  className={inputClasses}
-                  disabled={!allowSync}
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-                URL
-                <input
-                  type="url"
-                  value={bookmarkForm.url}
-                  onChange={(event) => onBookmarkFormChange('url', event.target.value)}
-                  placeholder="https://example.com"
-                  className={inputClasses}
-                  disabled={!allowSync}
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
-                Note (optional)
-                <textarea
-                  value={bookmarkForm.note}
-                  onChange={(event) => onBookmarkFormChange('note', event.target.value)}
-                  className={`${inputClasses} resize-y`}
-                  disabled={!allowSync}
-                />
-              </label>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <button
-                  className={`${subtleButtonClasses} gap-2`}
-                  type="button"
-                  disabled={!allowSync || !hasChromeTabsSupport}
-                  onClick={onUseCurrentTab}
-                >
-                  <FontAwesomeIcon icon={faLaptopCode} />
-                  Use current tab
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingBookmark || !allowSync}
-                  className={`${actionButtonClasses} gap-2`}
-                >
-                  <FontAwesomeIcon
-                    icon={savingBookmark ? faSpinner : faBookmark}
-                    spin={savingBookmark}
-                  />
-                  {savingBookmark ? 'Saving…' : 'Save bookmark'}
-                </button>
-              </div>
-              {!hasChromeTabsSupport && (
-                <p className="text-xs text-slate-500">
-                  Load the built extension to capture the current tab automatically.
-                </p>
-              )}
-            </form>
-          </div>
-          <div className="grow flex flex-col gap-3 overflow-y-auto pr-2">
-            {selectedFolder.bookmarks.length === 0 && (
-              <p className="text-sm text-slate-500">
-                This folder is empty. Add bookmarks above or capture the current tab.
+        <div className="grow flex flex-col gap-4 overflow-hidden">
+          {collection.folders.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500">
+              <p className="flex items-center justify-center gap-2">
+                <FontAwesomeIcon icon={faFolder} />
+                No folders yet. Add one above to start saving bookmarks.
               </p>
-            )}
-            {selectedFolder.bookmarks.map((bookmark) => (
-              <article
-                key={bookmark.id}
-                className="relative group rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-indigo-200 focus-within:border-indigo-200"
-              >
-                <a
-                  href={bookmark.url}
-                  target="_self"
-                  className="block rounded-2xl p-4 pr-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+            </div>
+          ) : (
+            <div className="grow overflow-y-auto pr-2 flex flex-col gap-4">
+              {collection.folders.map((folder) => (
+                <article
+                  key={folder.id}
+                  className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 shadow-sm flex flex-col"
                 >
-                  <div className="flex flex-col gap-1">
-                    <p className="text-base font-semibold text-slate-900 transition group-hover:text-indigo-600">
-                      {bookmark.title}
-                    </p>
-                    <p className="flex items-center gap-1 break-all text-xs text-slate-500">
-                      <FontAwesomeIcon icon={faExternalLink} />
-                      {bookmark.url}
-                    </p>
-                    {bookmark.note && (
-                      <p className="text-sm text-slate-700">{bookmark.note}</p>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-wrap items-center gap-2 text-slate-900 font-semibold">
+                      <FontAwesomeIcon icon={faFolderOpen} className="text-indigo-500" />
+                      <span>{folder.name}</span>
+                      <span className="flex items-center gap-1 text-xs font-normal text-slate-500">
+                        <FontAwesomeIcon icon={faBookmark} />
+                        {folder.bookmarks.length} bookmark{folder.bookmarks.length === 1 ? '' : 's'}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className={`${subtleButtonClasses} gap-2 text-indigo-700 hover:text-indigo-800`}
+                        onClick={() => onOpenBookmarkModal(folder.id)}
+                        disabled={!allowSync}
+                      >
+                        <FontAwesomeIcon icon={faPlus} />
+                        Add bookmark
+                      </button>
+                      <button
+                        type="button"
+                        className={`${subtleButtonClasses} gap-2 text-rose-600 hover:text-rose-700`}
+                        onClick={() => onDeleteFolder(folder)}
+                        disabled={!allowSync}
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                        Delete folder
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-3 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-5">
+                    {folder.bookmarks.length === 0 ? (
+                      <p className="text-sm text-slate-500">
+                        This folder is empty. Use “Add bookmark” to start filling it.
+                      </p>
+                    ) : (
+                      folder.bookmarks.map((bookmark) => (
+                        <article
+                          key={bookmark.id}
+                          className="relative group rounded-2xl border border-slate-200 bg-white transition hover:border-indigo-200 focus-within:border-indigo-200"
+                        >
+                          <a
+                            href={bookmark.url}
+                            target="_self"
+                            className="block rounded-2xl p-4 pr-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                          >
+                            <div className="flex flex-col gap-1">
+                              <p className="text-base font-semibold text-slate-900 transition group-hover:text-indigo-600">
+                                {bookmark.title}
+                              </p>
+                              <p className="flex items-center gap-1 break-all text-xs text-slate-500">
+                                <FontAwesomeIcon icon={faExternalLink} />
+                                {bookmark.url}
+                              </p>
+                              {bookmark.note && (
+                                <p className="text-sm text-slate-700">{bookmark.note}</p>
+                              )}
+                            </div>
+                          </a>
+                          <button
+                            className="absolute right-3 top-3 z-10 rounded-full text-slate-400 hover:bg-rose-50 cursor-pointer hover:text-rose-600 h-6 w-6 flex items-center justify-center"
+                            type="button"
+                            onClick={() => onDeleteBookmark(folder.id, bookmark.id)}
+                            disabled={!allowSync}
+                            aria-label={`Delete bookmark ${bookmark.title}`}
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                          </button>
+                        </article>
+                      ))
                     )}
                   </div>
-                </a>
-                <button
-                  className="absolute right-3 top-3 z-10 rounded-full p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                  type="button"
-                  onClick={() => onDeleteBookmark(bookmark.id)}
-                  disabled={!allowSync}
-                  aria-label={`Delete bookmark ${bookmark.title}`}
-                >
-                  <FontAwesomeIcon icon={faTrash} />
-                </button>
-              </article>
-            ))}
-          </div>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500">
-          Create a folder to start capturing bookmarks.
-        </div>
-      )}
-    </div>
-  </section>
-)
+      </div>
+      <AddBookmarkModal
+        folder={activeBookmarkFolder}
+        open={Boolean(activeBookmarkFolder)}
+        allowSync={allowSync}
+        bookmarkForm={bookmarkForm}
+        onBookmarkFormChange={onBookmarkFormChange}
+        onAddBookmark={onAddBookmark}
+        savingBookmark={savingBookmark}
+        hasChromeTabsSupport={hasChromeTabsSupport}
+        onClose={onCloseBookmarkModal}
+      />
+    </section>
+  )
+}
 
 export default CollectionDetails

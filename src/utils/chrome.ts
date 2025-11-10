@@ -1,22 +1,27 @@
 export const hasChromeTabsSupport =
   typeof chrome !== 'undefined' && !!chrome.tabs
 
-export const getActiveTabInfo = async () => {
+export type BrowserTab = {
+  id: string
+  title: string
+  url: string
+}
+
+export const getCurrentWindowTabs = async (): Promise<BrowserTab[]> => {
   if (!hasChromeTabsSupport) {
     throw new Error('Chrome tabs API is unavailable in this environment.')
   }
 
-  const [tab] = await chrome.tabs.query({
-    active: true,
-    lastFocusedWindow: true,
+  const tabs = await chrome.tabs.query({
+    currentWindow: true,
   })
 
-  if (!tab || !tab.url) {
-    throw new Error('Unable to read the active tab.')
-  }
-
-  return {
-    title: tab.title ?? tab.url,
-    url: tab.url,
-  }
+  return tabs
+    .filter((tab): tab is chrome.tabs.Tab & { url: string } => Boolean(tab.url))
+    .filter((tab) => tab.url !== 'chrome://newtab/')
+    .map((tab) => ({
+      id: String(tab.id ?? `${tab.windowId}-${tab.index}-${tab.url}`),
+      title: tab.title ?? tab.url ?? 'Untitled tab',
+      url: tab.url,
+    }))
 }

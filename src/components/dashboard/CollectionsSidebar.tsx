@@ -82,10 +82,10 @@ const CollectionsSidebar = ({
               key={collection.id}
               role="button"
               tabIndex={0}
-              className={`flex items-center justify-between rounded-2xl border px-3 py-3 text-sm transition ${
+              className={`flex items-center cursor-pointer justify-between rounded-2xl border px-3 py-3 text-sm transition hover:border-indigo-300 hover:text-indigo-900 ${
                 isActive
                   ? 'border-indigo-300 bg-indigo-50 text-indigo-900'
-                  : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300'
+                  : 'border-slate-200 bg-white text-slate-800'
               }`}
               onClick={() => handleCollectionClick(collection.id)}
               onKeyDown={(event) => {
@@ -111,7 +111,7 @@ const CollectionsSidebar = ({
                 </div>
               </div>
               <button
-                className="rounded-full p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                className="cursor-pointer rounded-full h-8 w-8 flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-600"
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation()
