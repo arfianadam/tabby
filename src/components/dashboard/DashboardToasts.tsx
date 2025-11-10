@@ -49,6 +49,15 @@ const DashboardToasts = ({
               className="text-base"
             />
             <span>{renderedBanner.text}</span>
+            {renderedBanner.action && (
+              <button
+                type="button"
+                className="rounded-full border cursor-pointer border-white/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white hover:bg-white/20"
+                onClick={renderedBanner.action.onClick}
+              >
+                {renderedBanner.action.label}
+              </button>
+            )}
             <button
               type="button"
               className="rounded-full p-1 hover:bg-white/20"

@@ -9,8 +9,9 @@ import {
   deleteBookmarkFromFolder,
   deleteCollection,
   deleteFolder,
+  restoreBookmarkToFolder,
 } from "../services/collections";
-import type { Collection, Folder } from "../types";
+import type { Bookmark, Collection, Folder } from "../types";
 import CollectionDetails from "./dashboard/CollectionDetails";
 import CollectionsSidebar from "./dashboard/CollectionsSidebar";
 import DashboardHeader from "./dashboard/DashboardHeader";
@@ -20,9 +21,15 @@ import { hasChromeTabsSupport } from "../utils/chrome";
 
 export type BannerTone = ToastTone;
 
+export type BannerAction = {
+  label: string;
+  onClick: () => void;
+};
+
 export type Banner = {
   text: string;
   tone: BannerTone;
+  action?: BannerAction;
 };
 
 export type BookmarkFormState = {
@@ -116,8 +123,12 @@ const Dashboard = ({
     }));
   };
 
-  const notify = (text: string, tone: BannerTone = "info") => {
-    const nextBanner: Banner = { text, tone };
+  const notify = (
+    text: string,
+    tone: BannerTone = "info",
+    action?: Banner["action"],
+  ) => {
+    const nextBanner: Banner = { text, tone, action };
     setRenderedBanner(nextBanner);
     setBanner(nextBanner);
   };
@@ -264,6 +275,32 @@ const Dashboard = ({
     }
   };
 
+  const handleRestoreDeletedBookmark = async (
+    bookmark: Bookmark,
+    folderId: string,
+    collectionId: string,
+    targetIndex: number,
+  ) => {
+    if (guardSync()) {
+      return;
+    }
+    try {
+      await restoreBookmarkToFolder(
+        user.uid,
+        collectionId,
+        folderId,
+        bookmark,
+        targetIndex,
+      );
+      notify("Bookmark restored.", "success");
+    } catch (err) {
+      notify(
+        err instanceof Error ? err.message : "Unable to restore bookmark.",
+        "danger",
+      );
+    }
+  };
+
   const saveBookmarkToFolder = async (
     folderId: string,
     bookmarkData: BookmarkFormState,
@@ -322,14 +359,39 @@ const Dashboard = ({
     if (!selectedCollection || guardSync()) {
       return;
     }
+    const collectionId = selectedCollection.id;
+    const folder = selectedCollection.folders.find(
+      (entry) => entry.id === folderId,
+    );
+    if (!folder) {
+      notify("The selected folder is no longer available.", "danger");
+      return;
+    }
+    const bookmarkIndex = folder.bookmarks.findIndex(
+      (entry) => entry.id === bookmarkId,
+    );
+    if (bookmarkIndex === -1) {
+      notify("The selected bookmark is no longer available.", "danger");
+      return;
+    }
+    const bookmark = folder.bookmarks[bookmarkIndex];
     try {
       await deleteBookmarkFromFolder(
         user.uid,
-        selectedCollection.id,
+        collectionId,
         folderId,
         bookmarkId,
       );
-      notify("Bookmark removed.", "info");
+      notify("Bookmark removed.", "info", {
+        label: "Undo",
+        onClick: () =>
+          handleRestoreDeletedBookmark(
+            bookmark,
+            folderId,
+            collectionId,
+            bookmarkIndex,
+          ),
+      });
     } catch (err) {
       notify(
         err instanceof Error ? err.message : "Unable to delete bookmark.",

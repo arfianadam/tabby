@@ -215,3 +215,43 @@ export const deleteBookmarkFromFolder = async (
         : folder,
     ),
   }));
+
+export const restoreBookmarkToFolder = async (
+  uid: string,
+  collectionId: string,
+  folderId: string,
+  bookmark: Bookmark,
+  targetIndex: number,
+) =>
+  mutateCollection(uid, collectionId, (collection) => {
+    let folderFound = false;
+
+    const folders = collection.folders.map((folder) => {
+      if (folder.id !== folderId) {
+        return folder;
+      }
+      folderFound = true;
+      const dedupedBookmarks = folder.bookmarks.filter(
+        (entry) => entry.id !== bookmark.id,
+      );
+      const insertionIndex = Math.min(
+        Math.max(targetIndex, 0),
+        dedupedBookmarks.length,
+      );
+      const nextBookmarks = [...dedupedBookmarks];
+      nextBookmarks.splice(insertionIndex, 0, bookmark);
+      return {
+        ...folder,
+        bookmarks: nextBookmarks,
+      };
+    });
+
+    if (!folderFound) {
+      throw new Error("Folder not found.");
+    }
+
+    return {
+      ...collection,
+      folders,
+    };
+  });
