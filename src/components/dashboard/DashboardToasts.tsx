@@ -1,31 +1,31 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCircleCheck,
   faCircleExclamation,
   faCircleInfo,
   faCloudArrowUp,
   faXmark,
-} from '@fortawesome/free-solid-svg-icons'
-import type { Banner } from '../Dashboard'
-import AnimatedToast from './AnimatedToast'
-import { toastToneClasses } from './constants'
+} from "@fortawesome/free-solid-svg-icons";
+import type { Banner } from "../Dashboard";
+import AnimatedToast from "./AnimatedToast";
+import { toastToneClasses } from "./constants";
 
 type DashboardToastsProps = {
-  banner: Banner | null
-  renderedBanner: Banner | null
-  syncToastVisible: boolean
-  syncToastShouldRender: boolean
-  onBannerExited: () => void
-  onBannerDismiss: () => void
-  onSyncToastExited: () => void
-  onSyncToastDismiss: () => void
-}
+  banner: Banner | null;
+  renderedBanner: Banner | null;
+  syncToastVisible: boolean;
+  syncToastShouldRender: boolean;
+  onBannerExited: () => void;
+  onBannerDismiss: () => void;
+  onSyncToastExited: () => void;
+  onSyncToastDismiss: () => void;
+};
 
 const toastIcons = {
   info: faCircleInfo,
   success: faCircleCheck,
   danger: faCircleExclamation,
-} as const
+} as const;
 
 const DashboardToasts = ({
   banner,
@@ -37,14 +37,17 @@ const DashboardToasts = ({
   onSyncToastExited,
   onSyncToastDismiss,
 }: DashboardToastsProps) =>
-  (renderedBanner || syncToastShouldRender) ? (
+  renderedBanner || syncToastShouldRender ? (
     <div className="fixed bottom-8 left-0 right-0 z-50 flex flex-col items-center gap-2">
       {renderedBanner && (
         <AnimatedToast isVisible={Boolean(banner)} onExited={onBannerExited}>
           <div
             className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium shadow-2xl ${toastToneClasses[renderedBanner.tone]}`}
           >
-            <FontAwesomeIcon icon={toastIcons[renderedBanner.tone]} className="text-base" />
+            <FontAwesomeIcon
+              icon={toastIcons[renderedBanner.tone]}
+              className="text-base"
+            />
             <span>{renderedBanner.text}</span>
             <button
               type="button"
@@ -58,7 +61,10 @@ const DashboardToasts = ({
         </AnimatedToast>
       )}
       {syncToastShouldRender && (
-        <AnimatedToast isVisible={syncToastVisible} onExited={onSyncToastExited}>
+        <AnimatedToast
+          isVisible={syncToastVisible}
+          onExited={onSyncToastExited}
+        >
           <div className="flex items-center gap-3 rounded-2xl bg-emerald-600/95 px-4 py-3 text-sm font-medium text-white shadow-2xl">
             <FontAwesomeIcon icon={faCloudArrowUp} className="text-base" />
             <span>Workspace reconnected. Changes sync automatically.</span>
@@ -74,6 +80,6 @@ const DashboardToasts = ({
         </AnimatedToast>
       )}
     </div>
-  ) : null
+  ) : null;
 
-export default DashboardToasts
+export default DashboardToasts;

@@ -115,11 +115,11 @@ const blobToDataUrl = (blob: Blob) =>
 
 const encodeS2 = (target: string) =>
   `https://www.google.com/s2/favicons?sz=64&domain_url=${encodeURIComponent(
-    target
+    target,
   )}`;
 const encodeGstatic = (target: string) =>
   `https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&sz=64&url=${encodeURIComponent(
-    target
+    target,
   )}`;
 
 const buildFaviconSources = (url: string): string[] => {
@@ -166,7 +166,7 @@ const downloadFavicon = async (url: string): Promise<string | null> => {
 };
 
 export const fetchAndCacheFavicon = async (
-  url: string
+  url: string,
 ): Promise<string | null> => {
   if (!url) {
     return null;
@@ -185,7 +185,7 @@ export const fetchAndCacheFavicon = async (
           persistCacheEntry(url, dataUrl);
         }
         return dataUrl;
-      })()
+      })(),
     );
   }
 

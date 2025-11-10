@@ -36,7 +36,7 @@ type CollectionDetailsProps = {
   onBookmarkFormChange: (field: keyof BookmarkFormState, value: string) => void;
   onAddBookmark: (
     event: React.FormEvent<HTMLFormElement>,
-    folderId: string
+    folderId: string,
   ) => void;
   savingBookmark: boolean;
   hasChromeTabsSupport: boolean;
@@ -67,7 +67,7 @@ const CollectionDetails = ({
     null;
   const allBookmarks = useMemo(
     () => collection.folders.flatMap((folder) => folder.bookmarks),
-    [collection.folders]
+    [collection.folders],
   );
   const faviconMap = useBookmarkFavicons(allBookmarks);
 

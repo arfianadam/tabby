@@ -1,104 +1,105 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import type { Bookmark } from '../types'
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { Bookmark } from "../types";
 import {
   fetchAndCacheFavicon,
   getCachedFaviconDataUrl,
-} from '../utils/favicons'
+} from "../utils/favicons";
 
-type BookmarkIconMap = Record<string, string>
+type BookmarkIconMap = Record<string, string>;
 
 export const useBookmarkFavicons = (bookmarks: Bookmark[]) => {
-  const [icons, setIcons] = useState<BookmarkIconMap>({})
-  const requestedRef = useRef<Set<string>>(new Set())
+  const [icons, setIcons] = useState<BookmarkIconMap>({});
+  const requestedRef = useRef<Set<string>>(new Set());
 
   // Drop icons for bookmarks that have been removed to keep memory usage low.
   useEffect(() => {
     setIcons((prev) => {
-      const next: BookmarkIconMap = {}
+      const next: BookmarkIconMap = {};
       bookmarks.forEach((bookmark) => {
         if (prev[bookmark.id]) {
-          next[bookmark.id] = prev[bookmark.id]
+          next[bookmark.id] = prev[bookmark.id];
         }
-      })
+      });
       if (Object.keys(next).length === Object.keys(prev).length) {
-        return prev
+        return prev;
       }
-      return next
-    })
+      return next;
+    });
     requestedRef.current.forEach((id) => {
       if (!bookmarks.some((bookmark) => bookmark.id === id)) {
-        requestedRef.current.delete(id)
+        requestedRef.current.delete(id);
       }
-    })
-  }, [bookmarks])
+    });
+  }, [bookmarks]);
 
   useEffect(() => {
     if (!bookmarks.length) {
-      return
+      return;
     }
 
-    const cachedUpdates: BookmarkIconMap = {}
+    const cachedUpdates: BookmarkIconMap = {};
     const toFetch = bookmarks.filter((bookmark) => {
       if (!bookmark.url || icons[bookmark.id]) {
-        return false
+        return false;
       }
-      const cached = getCachedFaviconDataUrl(bookmark.url)
+      const cached = getCachedFaviconDataUrl(bookmark.url);
       if (cached) {
-        cachedUpdates[bookmark.id] = cached
-        return false
+        cachedUpdates[bookmark.id] = cached;
+        return false;
       }
       if (requestedRef.current.has(bookmark.id)) {
-        return false
+        return false;
       }
-      requestedRef.current.add(bookmark.id)
-      return true
-    })
+      requestedRef.current.add(bookmark.id);
+      return true;
+    });
 
     if (Object.keys(cachedUpdates).length) {
-      setIcons((prev) => ({ ...prev, ...cachedUpdates }))
+      setIcons((prev) => ({ ...prev, ...cachedUpdates }));
     }
 
     if (!toFetch.length) {
-      return
+      return;
     }
 
-    let cancelled = false
+    let cancelled = false;
     const fetchIcons = async () => {
       const results = await Promise.allSettled(
         toFetch.map(async (bookmark) => {
-          const icon = await fetchAndCacheFavicon(bookmark.url)
-          return { id: bookmark.id, icon }
+          const icon = await fetchAndCacheFavicon(bookmark.url);
+          return { id: bookmark.id, icon };
         }),
-      )
+      );
 
       if (cancelled) {
-        return
+        return;
       }
 
-      const updates: BookmarkIconMap = {}
+      const updates: BookmarkIconMap = {};
       results.forEach((result) => {
-        if (result.status === 'fulfilled' && result.value.icon) {
-          updates[result.value.id] = result.value.icon
+        if (result.status === "fulfilled" && result.value.icon) {
+          updates[result.value.id] = result.value.icon;
         }
-      })
+      });
 
       if (Object.keys(updates).length) {
-        setIcons((prev) => ({ ...prev, ...updates }))
+        setIcons((prev) => ({ ...prev, ...updates }));
       }
-    }
+    };
 
-    fetchIcons()
+    fetchIcons();
 
     return () => {
-      cancelled = true
-    }
-  }, [bookmarks, icons])
+      cancelled = true;
+    };
+  }, [bookmarks, icons]);
 
   return useMemo(() => {
-    const map: Record<string, string | null> = {}
+    const map: Record<string, string | null> = {};
     bookmarks.forEach((bookmark) => {
-      map[bookmark.id] = icons[bookmark.id] ?? getCachedFaviconDataUrl(bookmark.url) ?? null
-    })
-    return map
-  }, [bookmarks, icons])
-}
+      map[bookmark.id] =
+        icons[bookmark.id] ?? getCachedFaviconDataUrl(bookmark.url) ?? null;
+    });
+    return map;
+  }, [bookmarks, icons]);
+};

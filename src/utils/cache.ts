@@ -226,7 +226,7 @@ const encryptPayload = async (uid: string, plaintext: string) => {
       iv,
     },
     key,
-    textEncoder.encode(plaintext)
+    textEncoder.encode(plaintext),
   );
   return JSON.stringify({
     v: 1,
@@ -251,7 +251,7 @@ const decryptPayload = async (uid: string | undefined, payload: string) => {
         iv: new Uint8Array(fromBase64(parsed.i)),
       },
       key,
-      fromBase64(parsed.d)
+      fromBase64(parsed.d),
     );
     return textDecoder.decode(plaintext);
   } catch {
@@ -261,7 +261,7 @@ const decryptPayload = async (uid: string | undefined, payload: string) => {
 
 export const configureCacheEncryption = async (
   uid: string | null,
-  secret: string | null
+  secret: string | null,
 ) => {
   if (!uid || !secret || !hasCryptoSupport()) {
     encryptionContext = null;
@@ -337,7 +337,7 @@ export const setCachedUser = async (user: CachedUser | null) => {
 };
 
 export const getCachedCollections = async (
-  uid: string
+  uid: string,
 ): Promise<Collection[]> => {
   const key = collectionsKey(uid);
   const raw = await readPersistedValue(key);
@@ -361,7 +361,7 @@ export const getCachedCollections = async (
 
 export const setCachedCollections = async (
   uid: string,
-  collections: Collection[]
+  collections: Collection[],
 ) => {
   const payload = JSON.stringify(collections);
   if (collectionsPayloadCache.get(uid) === payload) {

@@ -1,6 +1,10 @@
-import { getApp, getApps, initializeApp } from 'firebase/app'
-import { browserLocalPersistence, getAuth, setPersistence } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
+import { getApp, getApps, initializeApp } from "firebase/app";
+import {
+  browserLocalPersistence,
+  getAuth,
+  setPersistence,
+} from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -9,22 +13,22 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-}
+};
 
 for (const [key, value] of Object.entries(firebaseConfig)) {
   if (!value) {
-    throw new Error(`Missing Firebase configuration for ${key}`)
+    throw new Error(`Missing Firebase configuration for ${key}`);
   }
 }
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-export const auth = getAuth(app)
+export const auth = getAuth(app);
 
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   void setPersistence(auth, browserLocalPersistence).catch(() => {
     // Best-effort request; fall back to Firebase defaults if this fails.
-  })
+  });
 }
 
-export const db = getFirestore(app)
+export const db = getFirestore(app);

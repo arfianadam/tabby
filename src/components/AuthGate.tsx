@@ -1,5 +1,5 @@
-import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCircleCheck,
   faCircleExclamation,
@@ -9,151 +9,146 @@ import {
   faSpinner,
   faTriangleExclamation,
   faUserPlus,
-} from '@fortawesome/free-solid-svg-icons'
-import { useEffect, useMemo, useState } from 'react'
+} from "@fortawesome/free-solid-svg-icons";
+import { useEffect, useMemo, useState } from "react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-} from 'firebase/auth'
-import type { FormEvent, ReactNode } from 'react'
-import { auth } from '../firebase/client'
-import { useAuthState } from '../hooks/useAuthState'
-import { getCachedCollections } from '../utils/cache'
-import Dashboard from './Dashboard'
-import type { Collection } from '../types'
+} from "firebase/auth";
+import type { FormEvent, ReactNode } from "react";
+import { auth } from "../firebase/client";
+import { useAuthState } from "../hooks/useAuthState";
+import { getCachedCollections } from "../utils/cache";
+import Dashboard from "./Dashboard";
+import type { Collection } from "../types";
 
 const inputClasses =
-  'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20'
+  "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20";
 const primaryButtonClasses =
-  'inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-500 transition disabled:cursor-not-allowed disabled:opacity-60'
+  "inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-500 transition disabled:cursor-not-allowed disabled:opacity-60";
 const subtleButtonClasses =
-  'inline-flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition'
+  "inline-flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition";
 
 const bannerToneClasses = {
-  info: 'border-sky-200 bg-sky-50 text-sky-800',
-  success: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  danger: 'border-rose-200 bg-rose-50 text-rose-800',
-  warning: 'border-amber-200 bg-amber-50 text-amber-800',
-} as const
+  info: "border-sky-200 bg-sky-50 text-sky-800",
+  success: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  danger: "border-rose-200 bg-rose-50 text-rose-800",
+  warning: "border-amber-200 bg-amber-50 text-amber-800",
+} as const;
 
-const bannerToneIcons: Record<keyof typeof bannerToneClasses, IconDefinition> = {
-  info: faCircleInfo,
-  success: faCircleCheck,
-  danger: faCircleExclamation,
-  warning: faTriangleExclamation,
-}
+const bannerToneIcons: Record<keyof typeof bannerToneClasses, IconDefinition> =
+  {
+    info: faCircleInfo,
+    success: faCircleCheck,
+    danger: faCircleExclamation,
+    warning: faTriangleExclamation,
+  };
 
 const initialForm = {
-  email: '',
-  password: '',
-  confirmPassword: '',
-  invitationCode: '',
-}
+  email: "",
+  password: "",
+  confirmPassword: "",
+  invitationCode: "",
+};
 
 const AuthGate = () => {
-  const { user, cachedUser, initializing, error, cacheReady } = useAuthState()
-  const [mode, setMode] = useState<'login' | 'register'>('login')
-  const [form, setForm] = useState(initialForm)
-  const [submitting, setSubmitting] = useState(false)
-  const [formError, setFormError] = useState<string | null>(null)
-  const inviteCode = import.meta.env.VITE_INVITE_CODE?.trim()
+  const { user, cachedUser, initializing, error, cacheReady } = useAuthState();
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [form, setForm] = useState(initialForm);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const inviteCode = import.meta.env.VITE_INVITE_CODE?.trim();
 
   const missingInviteCode = useMemo(
-    () => mode === 'register' && !inviteCode,
+    () => mode === "register" && !inviteCode,
     [inviteCode, mode],
-  )
+  );
 
-  const handleChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ): void => {
-    const { name, value } = event.target
-    setForm((prev) => ({ ...prev, [name]: value }))
-  }
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    const { name, value } = event.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setFormError(null)
-    setSubmitting(true)
+    event.preventDefault();
+    setFormError(null);
+    setSubmitting(true);
     try {
-      await signInWithEmailAndPassword(auth, form.email, form.password)
+      await signInWithEmailAndPassword(auth, form.email, form.password);
     } catch (err) {
       setFormError(
-        err instanceof Error ? err.message : 'Unable to sign in right now.',
-      )
+        err instanceof Error ? err.message : "Unable to sign in right now.",
+      );
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   const handleRegister = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setFormError(null)
+    event.preventDefault();
+    setFormError(null);
 
     if (!inviteCode) {
-      setFormError('Registration is disabled until an invitation code is set.')
-      return
+      setFormError("Registration is disabled until an invitation code is set.");
+      return;
     }
     if (form.invitationCode.trim() !== inviteCode) {
-      setFormError('Invalid invitation code.')
-      return
+      setFormError("Invalid invitation code.");
+      return;
     }
     if (form.password.length < 8) {
-      setFormError('Use a password with at least 8 characters.')
-      return
+      setFormError("Use a password with at least 8 characters.");
+      return;
     }
     if (form.password !== form.confirmPassword) {
-      setFormError('Password and confirmation do not match.')
-      return
+      setFormError("Password and confirmation do not match.");
+      return;
     }
 
-    setSubmitting(true)
+    setSubmitting(true);
     try {
-      await createUserWithEmailAndPassword(
-        auth,
-        form.email,
-        form.password,
-      )
+      await createUserWithEmailAndPassword(auth, form.email, form.password);
     } catch (err) {
       setFormError(
-        err instanceof Error
-          ? err.message
-          : 'Unable to register right now.',
-      )
+        err instanceof Error ? err.message : "Unable to register right now.",
+      );
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   const toggleMode = () => {
-    setMode((prev) => (prev === 'login' ? 'register' : 'login'))
-    setForm(initialForm)
-    setFormError(null)
-  }
+    setMode((prev) => (prev === "login" ? "register" : "login"));
+    setForm(initialForm);
+    setFormError(null);
+  };
 
-  const workspaceUser = user ?? cachedUser ?? null
-  const isColdStart = initializing && !workspaceUser
-  const [cachedCollections, setCachedCollectionsState] = useState<Collection[]>([])
+  const workspaceUser = user ?? cachedUser ?? null;
+  const isColdStart = initializing && !workspaceUser;
+  const [cachedCollections, setCachedCollectionsState] = useState<Collection[]>(
+    [],
+  );
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
     if (!workspaceUser) {
-      setCachedCollectionsState([])
-      return
+      setCachedCollectionsState([]);
+      return;
     }
     if (!cacheReady) {
-      return
+      return;
     }
     const loadCachedCollections = async () => {
-      const data = await getCachedCollections(workspaceUser.uid)
+      const data = await getCachedCollections(workspaceUser.uid);
       if (!cancelled) {
-        setCachedCollectionsState(data)
+        setCachedCollectionsState(data);
       }
-    }
-    void loadCachedCollections()
+    };
+    void loadCachedCollections();
     return () => {
-      cancelled = true
-    }
-  }, [workspaceUser, cacheReady])
+      cancelled = true;
+    };
+  }, [workspaceUser, cacheReady]);
 
   if (isColdStart) {
     return (
@@ -166,7 +161,7 @@ const AuthGate = () => {
         </h1>
         <p className="mt-2 text-sm">Please wait while we sync your account.</p>
       </div>
-    )
+    );
   }
 
   if (workspaceUser) {
@@ -177,17 +172,17 @@ const AuthGate = () => {
         allowSync={Boolean(user)}
         initialCollections={cachedCollections}
       />
-    )
+    );
   }
 
-  const onSubmit = mode === 'login' ? handleLogin : handleRegister
+  const onSubmit = mode === "login" ? handleLogin : handleRegister;
 
   const Banner = ({
     tone,
     children,
   }: {
-    tone: keyof typeof bannerToneClasses
-    children: ReactNode
+    tone: keyof typeof bannerToneClasses;
+    children: ReactNode;
   }) => (
     <div
       className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${bannerToneClasses[tone]}`}
@@ -195,13 +190,13 @@ const AuthGate = () => {
       <FontAwesomeIcon icon={bannerToneIcons[tone]} className="text-base" />
       <span>{children}</span>
     </div>
-  )
+  );
 
   const actionIcon = submitting
     ? faSpinner
-    : mode === 'login'
+    : mode === "login"
       ? faRightToBracket
-      : faUserPlus
+      : faUserPlus;
 
   return (
     <div className="rounded-3xl bg-white/90 p-6 shadow-2xl ring-1 ring-slate-100 backdrop-blur">
@@ -240,7 +235,7 @@ const AuthGate = () => {
               required
               name="password"
               autoComplete={
-                mode === 'login' ? 'current-password' : 'new-password'
+                mode === "login" ? "current-password" : "new-password"
               }
               type="password"
               placeholder="••••••••"
@@ -249,7 +244,7 @@ const AuthGate = () => {
               className={inputClasses}
             />
           </label>
-          {mode === 'register' && (
+          {mode === "register" && (
             <>
               <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
                 Confirm password
@@ -274,17 +269,17 @@ const AuthGate = () => {
                   onChange={handleChange}
                   disabled={missingInviteCode}
                   className={`${inputClasses} ${
-                    missingInviteCode ? 'cursor-not-allowed opacity-60' : ''
+                    missingInviteCode ? "cursor-not-allowed opacity-60" : ""
                   }`}
                 />
               </label>
               {missingInviteCode && (
                 <p className="flex items-center gap-2 text-sm text-slate-500">
                   <FontAwesomeIcon icon={faKey} className="text-slate-400" />
-                  Set{' '}
+                  Set{" "}
                   <code className="rounded bg-slate-100 px-1 py-0.5 text-xs text-slate-700">
                     VITE_INVITE_CODE
-                  </code>{' '}
+                  </code>{" "}
                   in your environment to enable registration.
                 </p>
               )}
@@ -301,20 +296,24 @@ const AuthGate = () => {
               className="mr-2"
             />
             {submitting
-              ? 'Please wait…'
-              : mode === 'login'
-                ? 'Sign in'
-                : 'Create account'}
+              ? "Please wait…"
+              : mode === "login"
+                ? "Sign in"
+                : "Create account"}
           </button>
         </form>
-        <button className={subtleButtonClasses} onClick={toggleMode} type="button">
-          {mode === 'login'
-            ? 'Need access? Use an invite to register.'
-            : 'Already have an account? Sign in.'}
+        <button
+          className={subtleButtonClasses}
+          onClick={toggleMode}
+          type="button"
+        >
+          {mode === "login"
+            ? "Need access? Use an invite to register."
+            : "Already have an account? Sign in."}
         </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AuthGate
+export default AuthGate;
