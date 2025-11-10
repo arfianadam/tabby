@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Tabby Collections",
+  "version": "0.1.0",
+  "description": "Toby-style bookmark collections that sync to Firebase.",
+  "action": {
+    "default_title": "Tabby Collections",
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "icons/tabby-16.png",
+      "48": "icons/tabby-48.png",
+      "128": "icons/tabby-128.png"
+    }
+  },
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+  "icons": {
+    "16": "icons/tabby-16.png",
+    "48": "icons/tabby-48.png",
+    "128": "icons/tabby-128.png"
+  },
+  "permissions": ["activeTab", "tabs", "storage"],
+  "host_permissions": [
+    "https://*.googleapis.com/*",
+    "https://*.gstatic.com/*",
+    "https://*.firebaseio.com/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://*.googleapis.com wss://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com"
+  }
+}
