@@ -93,7 +93,7 @@ export const useAuthState = () => {
         await configureCacheEncryption(null, null)
         await setCachedUser(null)
         if (options?.clearCollections && lastCachedUidRef.current) {
-          clearCachedCollections(lastCachedUidRef.current)
+          await clearCachedCollections(lastCachedUidRef.current)
         }
         lastCachedUidRef.current = null
         if (!cancelled) {
