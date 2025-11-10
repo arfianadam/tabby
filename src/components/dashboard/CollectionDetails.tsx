@@ -119,7 +119,7 @@ const CollectionDetails = ({
         <div className="grow flex flex-col gap-4 overflow-hidden">
           {collection.folders.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500">
-              <p className="flex items-center justify-center gap-2">
+              <p className="flex items-center justify-center gap-2 text-sm">
                 <FontAwesomeIcon icon={faFolder} />
                 No folders yet. Add one above to start saving bookmarks.
               </p>

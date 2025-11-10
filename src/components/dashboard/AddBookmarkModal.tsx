@@ -11,6 +11,7 @@ import type { BookmarkFormState } from "../Dashboard";
 import { actionButtonClasses, inputClasses } from "./constants";
 import { getCurrentWindowTabs } from "../../utils/chrome";
 import type { BrowserTab } from "../../utils/chrome";
+import { useFavicons } from "../../hooks/useFavicons";
 
 type AddBookmarkModalProps = {
   folder: Folder | null;
@@ -42,6 +43,7 @@ const AddBookmarkModal = ({
   const [tabsLoading, setTabsLoading] = useState(false);
   const [tabError, setTabError] = useState<string | null>(null);
   const [selectedTabId, setSelectedTabId] = useState<string | null>(null);
+  const tabFavicons = useFavicons(tabs);
 
   useEffect(() => {
     if (!open) {
@@ -223,6 +225,13 @@ const AddBookmarkModal = ({
                 <ul className="grow min-h-0 overflow-y-auto rounded-2xl border border-slate-200 bg-white text-left">
                   {[...tabs].reverse().map((tab) => {
                     const isSelected = tab.id === selectedTabId;
+                    const faviconSrc = tabFavicons[tab.id] ?? null;
+                    const fallbackInitial = (() => {
+                      const source =
+                        tab.title.trim() ||
+                        tab.url.replace(/^https?:\/\//i, "");
+                      return source ? source.charAt(0).toUpperCase() : "•";
+                    })();
                     return (
                       <li
                         key={tab.id}
@@ -243,6 +252,20 @@ const AddBookmarkModal = ({
                             }`}
                             aria-hidden="true"
                           />
+                          <span className="mt-0.5 h-6 w-6 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                            {faviconSrc ? (
+                              <img
+                                src={faviconSrc}
+                                alt=""
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <span className="flex h-full w-full items-center justify-center">
+                                {fallbackInitial}
+                              </span>
+                            )}
+                          </span>
                           <span className="flex min-w-0 flex-col">
                             <span className="text-sm font-medium text-slate-900 truncate">
                               {tab.title}
