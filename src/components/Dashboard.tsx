@@ -1,5 +1,6 @@
 import { signOut } from 'firebase/auth'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { auth } from '../firebase/client'
 import { useCollections } from '../hooks/useCollections'
 import {
@@ -27,6 +28,50 @@ const toastToneClasses = {
   success: 'bg-emerald-600/95 text-white',
   danger: 'bg-rose-600/95 text-white',
 } as const
+
+const TOAST_ANIMATION_DURATION_MS = 200
+
+type AnimatedToastProps = {
+  isVisible: boolean
+  children: ReactNode
+  onExited?: () => void
+}
+
+const AnimatedToast = ({ isVisible, children, onExited }: AnimatedToastProps) => {
+  const [shouldRender, setShouldRender] = useState(isVisible)
+
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof window.setTimeout> | undefined
+    if (isVisible) {
+      setShouldRender(true)
+    } else if (shouldRender) {
+      timeoutId = window.setTimeout(() => {
+        setShouldRender(false)
+        onExited?.()
+      }, TOAST_ANIMATION_DURATION_MS)
+    }
+
+    return () => {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId)
+      }
+    }
+  }, [isVisible, onExited, shouldRender])
+
+  if (!shouldRender) {
+    return null
+  }
+
+  return (
+    <div
+      className={`transform transition-all duration-200 ease-out ${
+        isVisible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-3 opacity-0 scale-95'
+      }`}
+    >
+      {children}
+    </div>
+  )
+}
 
 type BannerTone = keyof typeof toastToneClasses
 
@@ -71,7 +116,9 @@ const Dashboard = ({
   const [creatingFolder, setCreatingFolder] = useState(false)
   const [savingBookmark, setSavingBookmark] = useState(false)
   const [banner, setBanner] = useState<Banner | null>(null)
+  const [renderedBanner, setRenderedBanner] = useState<Banner | null>(null)
   const [syncToastVisible, setSyncToastVisible] = useState(false)
+  const [syncToastShouldRender, setSyncToastShouldRender] = useState(false)
   const wasRestoringRef = useRef(!allowSync)
 
   useEffect(() => {
@@ -123,7 +170,9 @@ const Dashboard = ({
   }, [selectedFolderId])
 
   const notify = (text: string, tone: BannerTone = 'info') => {
-    setBanner({ text, tone })
+    const nextBanner: Banner = { text, tone }
+    setRenderedBanner(nextBanner)
+    setBanner(nextBanner)
   }
 
   const guardSync = () => {
@@ -142,6 +191,7 @@ const Dashboard = ({
     }
     if (wasRestoringRef.current && allowSync) {
       wasRestoringRef.current = false
+      setSyncToastShouldRender(true)
       setSyncToastVisible(true)
       const timeout = window.setTimeout(() => {
         setSyncToastVisible(false)
@@ -408,7 +458,7 @@ const Dashboard = ({
                   key={collection.id}
                   role="button"
                   tabIndex={0}
-                  className={`flex items-center justify-between rounded-2xl border px-3 py-3 text-sm transition focus:outline-none focus:ring-2 focus:ring-indigo-500/40 ${
+                  className={`flex items-center justify-between rounded-2xl border px-3 py-3 text-sm transition ${
                     isActive
                       ? 'border-indigo-300 bg-indigo-50 text-indigo-900'
                       : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300'
@@ -664,35 +714,45 @@ const Dashboard = ({
           )}
         </section>
       </div>
-      {(banner || syncToastVisible) && (
+      {(renderedBanner || syncToastShouldRender) && (
         <div className="fixed bottom-8 left-0 right-0 z-50 flex flex-col items-center gap-2">
-          {banner && (
-            <div
-              className={`flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium shadow-2xl ${toastToneClasses[banner.tone]}`}
+          {renderedBanner && (
+            <AnimatedToast
+              isVisible={Boolean(banner)}
+              onExited={() => setRenderedBanner(null)}
             >
-              <span>{banner.text}</span>
-              <button
-                type="button"
-                className="rounded-full p-1 hover:bg-white/20"
-                onClick={() => setBanner(null)}
-                aria-label="Dismiss message"
+              <div
+                className={`flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium shadow-2xl ${toastToneClasses[renderedBanner.tone]}`}
               >
-                ×
-              </button>
-            </div>
+                <span>{renderedBanner.text}</span>
+                <button
+                  type="button"
+                  className="rounded-full p-1 hover:bg-white/20"
+                  onClick={() => setBanner(null)}
+                  aria-label="Dismiss message"
+                >
+                  ×
+                </button>
+              </div>
+            </AnimatedToast>
           )}
-          {syncToastVisible && (
-            <div className="flex items-center gap-2 rounded-2xl bg-emerald-600/95 px-4 py-3 text-sm font-medium text-white shadow-2xl">
-              <span>Workspace reconnected. Changes sync automatically.</span>
-              <button
-                type="button"
-                className="rounded-full p-1 text-white/80 hover:bg-emerald-500/40"
-                onClick={() => setSyncToastVisible(false)}
-                aria-label="Dismiss sync status"
-              >
-                ×
-              </button>
-            </div>
+          {syncToastShouldRender && (
+            <AnimatedToast
+              isVisible={syncToastVisible}
+              onExited={() => setSyncToastShouldRender(false)}
+            >
+              <div className="flex items-center gap-2 rounded-2xl bg-emerald-600/95 px-4 py-3 text-sm font-medium text-white shadow-2xl">
+                <span>Workspace reconnected. Changes sync automatically.</span>
+                <button
+                  type="button"
+                  className="rounded-full p-1 text-white/80 hover:bg-emerald-500/40"
+                  onClick={() => setSyncToastVisible(false)}
+                  aria-label="Dismiss sync status"
+                >
+                  ×
+                </button>
+              </div>
+            </AnimatedToast>
           )}
         </div>
       )}
