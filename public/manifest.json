@@ -20,7 +20,7 @@
     "48": "icons/tabby-48.png",
     "128": "icons/tabby-128.png"
   },
-  "permissions": ["activeTab", "tabs", "storage"],
+  "permissions": ["tabs"],
   "host_permissions": [
     "https://*.googleapis.com/*",
     "https://*.gstatic.com/*",

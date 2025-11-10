@@ -32,7 +32,9 @@ export const useCollections = (
         setCollections(nextCollections)
         setLoading(false)
         if (cacheKey) {
-          setCachedCollections(cacheKey, nextCollections)
+          void setCachedCollections(cacheKey, nextCollections).catch(() => {
+            // best-effort cache write; ignore crypto failures
+          })
         }
       },
       (err) => {

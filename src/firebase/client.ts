@@ -1,5 +1,5 @@
 import { getApp, getApps, initializeApp } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
+import { browserLocalPersistence, getAuth, setPersistence } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
@@ -20,4 +20,11 @@ for (const [key, value] of Object.entries(firebaseConfig)) {
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
 
 export const auth = getAuth(app)
+
+if (typeof window !== 'undefined') {
+  void setPersistence(auth, browserLocalPersistence).catch(() => {
+    // Best-effort request; fall back to Firebase defaults if this fails.
+  })
+}
+
 export const db = getFirestore(app)

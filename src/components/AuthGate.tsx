@@ -10,7 +10,7 @@ import {
   faTriangleExclamation,
   faUserPlus,
 } from '@fortawesome/free-solid-svg-icons'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -20,6 +20,7 @@ import { auth } from '../firebase/client'
 import { useAuthState } from '../hooks/useAuthState'
 import { getCachedCollections } from '../utils/cache'
 import Dashboard from './Dashboard'
+import type { Collection } from '../types'
 
 const inputClasses =
   'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20'
@@ -50,7 +51,7 @@ const initialForm = {
 }
 
 const AuthGate = () => {
-  const { user, cachedUser, initializing, error } = useAuthState()
+  const { user, cachedUser, initializing, error, cacheReady } = useAuthState()
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [form, setForm] = useState(initialForm)
   const [submitting, setSubmitting] = useState(false)
@@ -131,11 +132,28 @@ const AuthGate = () => {
 
   const workspaceUser = user ?? cachedUser ?? null
   const isColdStart = initializing && !workspaceUser
+  const [cachedCollections, setCachedCollectionsState] = useState<Collection[]>([])
 
-  const cachedCollections = useMemo(
-    () => (workspaceUser ? getCachedCollections(workspaceUser.uid) : []),
-    [workspaceUser],
-  )
+  useEffect(() => {
+    let cancelled = false
+    if (!workspaceUser) {
+      setCachedCollectionsState([])
+      return
+    }
+    if (!cacheReady) {
+      return
+    }
+    const loadCachedCollections = async () => {
+      const data = await getCachedCollections(workspaceUser.uid)
+      if (!cancelled) {
+        setCachedCollectionsState(data)
+      }
+    }
+    void loadCachedCollections()
+    return () => {
+      cancelled = true
+    }
+  }, [workspaceUser, cacheReady])
 
   if (isColdStart) {
     return (
