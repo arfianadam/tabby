@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBookmark,
@@ -11,6 +12,7 @@ import {
 import type { Folder } from "../../types";
 import type { Collection } from "../../types";
 import type { BookmarkFormState } from "../Dashboard";
+import { useBookmarkFavicons } from "../../hooks/useBookmarkFavicons";
 import {
   actionButtonClasses,
   inputClasses,
@@ -64,6 +66,11 @@ const CollectionDetails = ({
   const activeBookmarkFolder =
     collection.folders.find((folder) => folder.id === bookmarkModalFolderId) ??
     null;
+  const allBookmarks = useMemo(
+    () => collection.folders.flatMap((folder) => folder.bookmarks),
+    [collection.folders]
+  );
+  const faviconMap = useBookmarkFavicons(allBookmarks);
 
   return (
     <section className={`${panelClass} min-h-0`}>
@@ -168,46 +175,72 @@ const CollectionDetails = ({
                     </div>
                   ) : (
                     <div className="mt-3 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-5">
-                      {folder.bookmarks.map((bookmark) => (
-                        <article
-                          key={bookmark.id}
-                          className="relative group rounded-2xl border border-slate-200 bg-white transition hover:border-indigo-200 focus-within:border-indigo-200"
-                        >
-                          <a
-                            href={bookmark.url}
-                            target="_self"
-                            className="block h-full rounded-2xl p-4 pr-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                      {folder.bookmarks.map((bookmark) => {
+                        const faviconSrc = faviconMap[bookmark.id] ?? null;
+                        const fallbackInitial = (() => {
+                          const source =
+                            bookmark.title.trim() ||
+                            bookmark.url.replace(/^https?:\/\//i, "");
+                          return source ? source.charAt(0).toUpperCase() : "•";
+                        })();
+
+                        return (
+                          <article
+                            key={bookmark.id}
+                            className="relative group rounded-2xl border border-slate-200 bg-white transition hover:border-indigo-200 focus-within:border-indigo-200"
                           >
-                            <div className="flex flex-col gap-1">
-                              <p className="text-base font-semibold text-slate-900 transition group-hover:text-indigo-600 line-clamp-2">
-                                {bookmark.title}
-                              </p>
-                              <div className="flex items-center gap-1 text-xs text-slate-500">
-                                <FontAwesomeIcon icon={faExternalLink} />
-                                <span className="line-clamp-1 break-all flex-1">
-                                  {bookmark.url}
-                                </span>
+                            <a
+                              href={bookmark.url}
+                              target="_self"
+                              className="block h-full rounded-2xl p-4 pr-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                            >
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-start gap-3">
+                                  <span className="h-6 w-6 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                    {faviconSrc ? (
+                                      <img
+                                        src={faviconSrc}
+                                        alt=""
+                                        className="h-full w-full object-cover"
+                                        loading="lazy"
+                                      />
+                                    ) : (
+                                      <span className="flex h-full w-full items-center justify-center">
+                                        {fallbackInitial}
+                                      </span>
+                                    )}
+                                  </span>
+                                  <p className="text-base font-semibold text-slate-900 transition group-hover:text-indigo-600 line-clamp-2">
+                                    {bookmark.title}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1 text-xs text-slate-500">
+                                  <FontAwesomeIcon icon={faExternalLink} />
+                                  <span className="line-clamp-1 break-all flex-1">
+                                    {bookmark.url}
+                                  </span>
+                                </div>
+                                {bookmark.note && (
+                                  <p className="text-sm text-slate-700">
+                                    {bookmark.note}
+                                  </p>
+                                )}
                               </div>
-                              {bookmark.note && (
-                                <p className="text-sm text-slate-700">
-                                  {bookmark.note}
-                                </p>
-                              )}
-                            </div>
-                          </a>
-                          <button
-                            className="absolute right-3 top-3 z-10 rounded-full text-slate-400 hover:bg-rose-50 cursor-pointer hover:text-rose-600 h-6 w-6 flex items-center justify-center"
-                            type="button"
-                            onClick={() =>
-                              onDeleteBookmark(folder.id, bookmark.id)
-                            }
-                            disabled={!allowSync}
-                            aria-label={`Delete bookmark ${bookmark.title}`}
-                          >
-                            <FontAwesomeIcon icon={faTrash} />
-                          </button>
-                        </article>
-                      ))}
+                            </a>
+                            <button
+                              className="absolute right-3 top-3 z-10 rounded-full text-slate-400 hover:bg-rose-50 cursor-pointer hover:text-rose-600 h-6 w-6 flex items-center justify-center"
+                              type="button"
+                              onClick={() =>
+                                onDeleteBookmark(folder.id, bookmark.id)
+                              }
+                              disabled={!allowSync}
+                              aria-label={`Delete bookmark ${bookmark.title}`}
+                            >
+                              <FontAwesomeIcon icon={faTrash} />
+                            </button>
+                          </article>
+                        );
+                      })}
                     </div>
                   )}
                 </article>

@@ -24,9 +24,10 @@
   "host_permissions": [
     "https://*.googleapis.com/*",
     "https://*.gstatic.com/*",
-    "https://*.firebaseio.com/*"
+    "https://*.firebaseio.com/*",
+    "https://www.google.com/*"
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://*.googleapis.com wss://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://*.googleapis.com wss://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com https://www.google.com"
   }
 }
