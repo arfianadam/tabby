@@ -1,5 +1,14 @@
-import { actionButtonClasses, inputClasses, panelClass } from './constants'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faFolder,
+  faFolderOpen,
+  faFolderPlus,
+  faPlus,
+  faSpinner,
+  faTrash,
+} from '@fortawesome/free-solid-svg-icons'
 import type { Collection } from '../../types'
+import { actionButtonClasses, inputClasses, panelClass } from './constants'
 
 type CollectionsSidebarProps = {
   allowSync: boolean
@@ -33,7 +42,8 @@ const CollectionsSidebar = ({
   return (
     <aside className={`${panelClass} min-h-0`}>
       <form className="space-y-2" onSubmit={onCreateCollection}>
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <FontAwesomeIcon icon={faFolderPlus} className="text-slate-400" />
           Create collection
         </span>
         <div className="flex gap-2">
@@ -50,6 +60,11 @@ const CollectionsSidebar = ({
             disabled={!allowSync || creatingCollection}
             className={actionButtonClasses}
           >
+            <FontAwesomeIcon
+              icon={creatingCollection ? faSpinner : faPlus}
+              spin={creatingCollection}
+              className="mr-2"
+            />
             {creatingCollection ? 'Adding…' : 'Add'}
           </button>
         </div>
@@ -79,11 +94,21 @@ const CollectionsSidebar = ({
                 }
               }}
             >
-              <div>
-                <p className="font-medium">{collection.name}</p>
-                <p className="text-xs text-slate-500">
-                  {collection.folders.length} folder{collection.folders.length === 1 ? '' : 's'}
-                </p>
+              <div className="flex items-center gap-3">
+                <span
+                  className={`rounded-full p-2 text-sm ${
+                    isActive ? 'bg-white/80 text-indigo-600' : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  <FontAwesomeIcon icon={isActive ? faFolderOpen : faFolder} />
+                </span>
+                <div>
+                  <p className="font-medium">{collection.name}</p>
+                  <p className="text-xs text-slate-500">
+                    {collection.folders.length} folder
+                    {collection.folders.length === 1 ? '' : 's'}
+                  </p>
+                </div>
               </div>
               <button
                 className="rounded-full p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
@@ -95,7 +120,7 @@ const CollectionsSidebar = ({
                 aria-label={`Delete ${collection.name}`}
                 disabled={!allowSync}
               >
-                ×
+                <FontAwesomeIcon icon={faTrash} />
               </button>
             </div>
           )

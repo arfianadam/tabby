@@ -1,3 +1,14 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faBookmark,
+  faExternalLink,
+  faFolder,
+  faFolderOpen,
+  faLaptopCode,
+  faPlus,
+  faSpinner,
+  faTrash,
+} from '@fortawesome/free-solid-svg-icons'
 import type { Folder } from '../../types'
 import type { Collection } from '../../types'
 import type { BookmarkFormState } from '../Dashboard'
@@ -65,6 +76,7 @@ const CollectionDetails = ({
           onClick={() => onDeleteCollection(collection)}
           disabled={!allowSync}
         >
+          <FontAwesomeIcon icon={faTrash} className="mr-2" />
           Delete collection
         </button>
       </div>
@@ -83,8 +95,15 @@ const CollectionDetails = ({
                 }`}
                 onClick={() => onSelectFolder(folder.id)}
               >
+                <FontAwesomeIcon
+                  icon={isActive ? faFolderOpen : faFolder}
+                  className="text-base"
+                />
                 <span>{folder.name}</span>
-                <span className="text-xs text-slate-400">{folder.bookmarks.length}</span>
+                <span className="flex items-center gap-1 text-xs text-slate-400">
+                  <FontAwesomeIcon icon={faBookmark} />
+                  {folder.bookmarks.length}
+                </span>
                 <span
                   role="button"
                   className="text-slate-400"
@@ -93,7 +112,7 @@ const CollectionDetails = ({
                     onDeleteFolder(folder)
                   }}
                 >
-                  ×
+                  <FontAwesomeIcon icon={faTrash} />
                 </span>
               </button>
             )
@@ -118,8 +137,12 @@ const CollectionDetails = ({
             <button
               type="submit"
               disabled={creatingFolder || !collection || !allowSync}
-              className={actionButtonClasses}
+              className={`${actionButtonClasses} gap-2`}
             >
+              <FontAwesomeIcon
+                icon={creatingFolder ? faSpinner : faPlus}
+                spin={creatingFolder}
+              />
               {creatingFolder ? 'Adding…' : 'Add'}
             </button>
           </div>
@@ -128,7 +151,8 @@ const CollectionDetails = ({
       {selectedFolder ? (
         <div className="grow flex flex-col gap-4 min-h-0">
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-4">
-            <h3 className="text-lg font-semibold text-slate-900">
+            <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+              <FontAwesomeIcon icon={faBookmark} className="text-indigo-500" />
               Add bookmark to {selectedFolder.name}
             </h3>
             <form className="mt-3 space-y-3" onSubmit={onAddBookmark}>
@@ -165,18 +189,23 @@ const CollectionDetails = ({
               </label>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <button
-                  className={subtleButtonClasses}
+                  className={`${subtleButtonClasses} gap-2`}
                   type="button"
                   disabled={!allowSync || !hasChromeTabsSupport}
                   onClick={onUseCurrentTab}
                 >
+                  <FontAwesomeIcon icon={faLaptopCode} />
                   Use current tab
                 </button>
                 <button
                   type="submit"
                   disabled={savingBookmark || !allowSync}
-                  className={actionButtonClasses}
+                  className={`${actionButtonClasses} gap-2`}
                 >
+                  <FontAwesomeIcon
+                    icon={savingBookmark ? faSpinner : faBookmark}
+                    spin={savingBookmark}
+                  />
                   {savingBookmark ? 'Saving…' : 'Save bookmark'}
                 </button>
               </div>
@@ -207,7 +236,8 @@ const CollectionDetails = ({
                     <p className="text-base font-semibold text-slate-900 transition group-hover:text-indigo-600">
                       {bookmark.title}
                     </p>
-                    <p className="break-all text-xs text-slate-500">
+                    <p className="flex items-center gap-1 break-all text-xs text-slate-500">
+                      <FontAwesomeIcon icon={faExternalLink} />
                       {bookmark.url}
                     </p>
                     {bookmark.note && (
@@ -222,7 +252,7 @@ const CollectionDetails = ({
                   disabled={!allowSync}
                   aria-label={`Delete bookmark ${bookmark.title}`}
                 >
-                  ×
+                  <FontAwesomeIcon icon={faTrash} />
                 </button>
               </article>
             ))}

@@ -1,3 +1,11 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faCircleCheck,
+  faCircleExclamation,
+  faCircleInfo,
+  faCloudArrowUp,
+  faXmark,
+} from '@fortawesome/free-solid-svg-icons'
 import type { Banner } from '../Dashboard'
 import AnimatedToast from './AnimatedToast'
 import { toastToneClasses } from './constants'
@@ -12,6 +20,12 @@ type DashboardToastsProps = {
   onSyncToastExited: () => void
   onSyncToastDismiss: () => void
 }
+
+const toastIcons = {
+  info: faCircleInfo,
+  success: faCircleCheck,
+  danger: faCircleExclamation,
+} as const
 
 const DashboardToasts = ({
   banner,
@@ -28,8 +42,9 @@ const DashboardToasts = ({
       {renderedBanner && (
         <AnimatedToast isVisible={Boolean(banner)} onExited={onBannerExited}>
           <div
-            className={`flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium shadow-2xl ${toastToneClasses[renderedBanner.tone]}`}
+            className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium shadow-2xl ${toastToneClasses[renderedBanner.tone]}`}
           >
+            <FontAwesomeIcon icon={toastIcons[renderedBanner.tone]} className="text-base" />
             <span>{renderedBanner.text}</span>
             <button
               type="button"
@@ -37,14 +52,15 @@ const DashboardToasts = ({
               onClick={onBannerDismiss}
               aria-label="Dismiss message"
             >
-              ×
+              <FontAwesomeIcon icon={faXmark} />
             </button>
           </div>
         </AnimatedToast>
       )}
       {syncToastShouldRender && (
         <AnimatedToast isVisible={syncToastVisible} onExited={onSyncToastExited}>
-          <div className="flex items-center gap-2 rounded-2xl bg-emerald-600/95 px-4 py-3 text-sm font-medium text-white shadow-2xl">
+          <div className="flex items-center gap-3 rounded-2xl bg-emerald-600/95 px-4 py-3 text-sm font-medium text-white shadow-2xl">
+            <FontAwesomeIcon icon={faCloudArrowUp} className="text-base" />
             <span>Workspace reconnected. Changes sync automatically.</span>
             <button
               type="button"
@@ -52,7 +68,7 @@ const DashboardToasts = ({
               onClick={onSyncToastDismiss}
               aria-label="Dismiss sync status"
             >
-              ×
+              <FontAwesomeIcon icon={faXmark} />
             </button>
           </div>
         </AnimatedToast>

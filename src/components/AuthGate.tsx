@@ -1,3 +1,15 @@
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faCircleCheck,
+  faCircleExclamation,
+  faCircleInfo,
+  faKey,
+  faRightToBracket,
+  faSpinner,
+  faTriangleExclamation,
+  faUserPlus,
+} from '@fortawesome/free-solid-svg-icons'
 import { useMemo, useState } from 'react'
 import {
   createUserWithEmailAndPassword,
@@ -22,6 +34,13 @@ const bannerToneClasses = {
   danger: 'border-rose-200 bg-rose-50 text-rose-800',
   warning: 'border-amber-200 bg-amber-50 text-amber-800',
 } as const
+
+const bannerToneIcons: Record<keyof typeof bannerToneClasses, IconDefinition> = {
+  info: faCircleInfo,
+  success: faCircleCheck,
+  danger: faCircleExclamation,
+  warning: faTriangleExclamation,
+}
 
 const initialForm = {
   email: '',
@@ -121,7 +140,10 @@ const AuthGate = () => {
   if (isColdStart) {
     return (
       <div className="rounded-2xl bg-white/90 p-6 text-center text-slate-600 shadow-xl ring-1 ring-slate-100 backdrop-blur">
-        <h1 className="text-xl font-semibold text-slate-900">
+        <div className="flex justify-center text-indigo-500">
+          <FontAwesomeIcon icon={faSpinner} spin className="text-3xl" />
+        </div>
+        <h1 className="mt-3 text-xl font-semibold text-slate-900">
           Preparing your workspace…
         </h1>
         <p className="mt-2 text-sm">Please wait while we sync your account.</p>
@@ -150,11 +172,18 @@ const AuthGate = () => {
     children: ReactNode
   }) => (
     <div
-      className={`flex items-center justify-between rounded-xl border px-3 py-2 text-sm ${bannerToneClasses[tone]}`}
+      className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${bannerToneClasses[tone]}`}
     >
+      <FontAwesomeIcon icon={bannerToneIcons[tone]} className="text-base" />
       <span>{children}</span>
     </div>
   )
+
+  const actionIcon = submitting
+    ? faSpinner
+    : mode === 'login'
+      ? faRightToBracket
+      : faUserPlus
 
   return (
     <div className="rounded-3xl bg-white/90 p-6 shadow-2xl ring-1 ring-slate-100 backdrop-blur">
@@ -232,7 +261,8 @@ const AuthGate = () => {
                 />
               </label>
               {missingInviteCode && (
-                <p className="text-sm text-slate-500">
+                <p className="flex items-center gap-2 text-sm text-slate-500">
+                  <FontAwesomeIcon icon={faKey} className="text-slate-400" />
                   Set{' '}
                   <code className="rounded bg-slate-100 px-1 py-0.5 text-xs text-slate-700">
                     VITE_INVITE_CODE
@@ -247,6 +277,11 @@ const AuthGate = () => {
             disabled={submitting || missingInviteCode}
             className={primaryButtonClasses}
           >
+            <FontAwesomeIcon
+              icon={actionIcon}
+              spin={submitting}
+              className="mr-2"
+            />
             {submitting
               ? 'Please wait…'
               : mode === 'login'
