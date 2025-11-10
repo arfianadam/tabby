@@ -14,21 +14,21 @@ import type { Collection, Folder } from '../types'
 import { getActiveTabInfo, hasChromeTabsSupport } from '../utils/chrome'
 
 const panelClass =
-  'rounded-2xl bg-white/90 p-4 shadow-xl ring-1 ring-slate-100 backdrop-blur flex flex-col gap-4'
+  'rounded-xl border border-slate-200 bg-white p-4 flex flex-col gap-4'
 const inputClasses =
   'w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20'
 const actionButtonClasses =
-  'inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-500 transition disabled:opacity-50'
+  'inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-50'
 const subtleButtonClasses =
-  'inline-flex items-center justify-center rounded-2xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition disabled:cursor-not-allowed disabled:opacity-60'
+  'inline-flex items-center justify-center rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition disabled:cursor-not-allowed disabled:opacity-60'
 
-const toneClasses = {
-  info: 'border-slate-200 bg-slate-50 text-slate-700',
-  success: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-  danger: 'border-rose-200 bg-rose-50 text-rose-700',
+const toastToneClasses = {
+  info: 'bg-slate-900/95 text-white',
+  success: 'bg-emerald-600/95 text-white',
+  danger: 'bg-rose-600/95 text-white',
 } as const
 
-type BannerTone = keyof typeof toneClasses
+type BannerTone = keyof typeof toastToneClasses
 
 type Banner = {
   text: string
@@ -150,6 +150,25 @@ const Dashboard = ({
     }
     return
   }, [allowSync])
+
+  useEffect(() => {
+    if (!banner) {
+      return
+    }
+    const timeout = window.setTimeout(() => {
+      setBanner(null)
+    }, 4000)
+    return () => window.clearTimeout(timeout)
+  }, [banner])
+
+  useEffect(() => {
+    if (error) {
+      notify(
+        `Failed to sync collections: ${error.message}`,
+        'danger',
+      )
+    }
+  }, [error])
 
   const handleCreateCollection = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -318,9 +337,9 @@ const Dashboard = ({
   const noCollections = !loading && collections.length === 0
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
       <header
-        className={`${panelClass} lg:flex-row lg:items-center lg:justify-between lg:gap-8`}
+        className={`${panelClass} lg:flex-row lg:items-center lg:justify-between lg:gap-6`}
       >
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
@@ -331,7 +350,7 @@ const Dashboard = ({
             Toby-style collections kept in sync with Firebase.
           </p>
         </div>
-        <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white/70 px-4 py-3">
+        <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
           <div>
             <p className="text-sm font-medium text-slate-900">
               {user.email ?? 'Signed in'}
@@ -351,29 +370,7 @@ const Dashboard = ({
           </button>
         </div>
       </header>
-      {banner && (
-        <div
-          className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-sm ${toneClasses[banner.tone]}`}
-        >
-          <span>{banner.text}</span>
-          <button
-            type="button"
-            className="rounded-full p-1 text-slate-500 hover:bg-slate-200"
-            onClick={() => setBanner(null)}
-            aria-label="Dismiss message"
-          >
-            ×
-          </button>
-        </div>
-      )}
-      {error && (
-        <div
-          className={`rounded-2xl border px-4 py-3 text-sm ${toneClasses.danger}`}
-        >
-          Failed to sync collections: {error.message}
-        </div>
-      )}
-      <div className="grid gap-4 lg:grid-cols-[260px,1fr]">
+      <div className="grid gap-2 lg:grid-cols-[260px,1fr]">
         <aside className={`${panelClass} max-h-[70vh]`}>
           <form className="space-y-2" onSubmit={handleCreateCollection}>
             <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -667,17 +664,36 @@ const Dashboard = ({
           )}
         </section>
       </div>
-      {syncToastVisible && (
-        <div className="fixed bottom-4 left-4 z-50 flex items-center gap-2 rounded-2xl bg-emerald-600/95 px-4 py-3 text-sm font-medium text-white shadow-2xl">
-          <span>Workspace reconnected. Changes sync automatically.</span>
-          <button
-            type="button"
-            className="rounded-full p-1 text-white/80 hover:bg-emerald-500/40"
-            onClick={() => setSyncToastVisible(false)}
-            aria-label="Dismiss sync status"
-          >
-            ×
-          </button>
+      {(banner || syncToastVisible) && (
+        <div className="fixed bottom-8 left-0 right-0 z-50 flex flex-col items-center gap-2">
+          {banner && (
+            <div
+              className={`flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium shadow-2xl ${toastToneClasses[banner.tone]}`}
+            >
+              <span>{banner.text}</span>
+              <button
+                type="button"
+                className="rounded-full p-1 hover:bg-white/20"
+                onClick={() => setBanner(null)}
+                aria-label="Dismiss message"
+              >
+                ×
+              </button>
+            </div>
+          )}
+          {syncToastVisible && (
+            <div className="flex items-center gap-2 rounded-2xl bg-emerald-600/95 px-4 py-3 text-sm font-medium text-white shadow-2xl">
+              <span>Workspace reconnected. Changes sync automatically.</span>
+              <button
+                type="button"
+                className="rounded-full p-1 text-white/80 hover:bg-emerald-500/40"
+                onClick={() => setSyncToastVisible(false)}
+                aria-label="Dismiss sync status"
+              >
+                ×
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
