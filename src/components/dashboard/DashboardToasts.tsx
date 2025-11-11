@@ -6,7 +6,7 @@ import {
   faCloudArrowUp,
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
-import type { Banner } from "../Dashboard";
+import type { Banner } from "./types";
 import AnimatedToast from "./AnimatedToast";
 import { toastToneClasses } from "./constants";
 

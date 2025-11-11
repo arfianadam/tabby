@@ -1,12 +1,9 @@
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { auth } from "../firebase/client";
-import {
-  clearCachedCollections,
-  configureCacheEncryption,
-  setCachedUser,
-  type CachedUser,
-} from "../utils/cache";
+import { clearCachedCollections } from "../utils/cache/collectionsCache";
+import { configureCacheEncryption } from "../utils/cache/configuration";
+import { setCachedUser, type CachedUser } from "../utils/cache/userCache";
 
 type PersistedAuthRecord = {
   uid: string;

@@ -2,7 +2,7 @@ import type { FirestoreError } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
 import type { Collection } from "../types";
 import { subscribeToCollections } from "../services/collections";
-import { setCachedCollections } from "../utils/cache";
+import { setCachedCollections } from "../utils/cache/collectionsCache";
 
 type UseCollectionsOptions = {
   initialData?: Collection[];

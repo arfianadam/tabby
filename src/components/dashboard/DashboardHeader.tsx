@@ -5,7 +5,7 @@ import {
   faCloudArrowDown,
   faCloudArrowUp,
 } from "@fortawesome/free-solid-svg-icons";
-import type { DashboardUser } from "../Dashboard";
+import type { DashboardUser } from "./types";
 import { panelClass, subtleButtonClasses } from "./constants";
 
 type DashboardHeaderProps = {

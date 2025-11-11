@@ -1,62 +1,26 @@
 import { signOut } from "firebase/auth";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { auth } from "../firebase/client";
 import { useCollections } from "../hooks/useCollections";
-import {
-  addBookmarksToFolder,
-  createCollection,
-  createFolder,
-  deleteBookmarkFromFolder,
-  deleteCollection,
-  deleteFolder,
-  reorderBookmarksInFolder,
-  reorderFolders,
-  restoreBookmarkToFolder,
-} from "../services/collections";
-import type { Bookmark, BookmarkDraft, Collection, Folder } from "../types";
+import { useSelectedCollection } from "../hooks/dashboard/useSelectedCollection";
+import { useBookmarkModalState } from "../hooks/dashboard/useBookmarkModalState";
+import { useDashboardNotifications } from "../hooks/dashboard/useDashboardNotifications";
+import { useCollectionActions } from "../hooks/dashboard/useCollectionActions";
+import type { BookmarkDraft, Collection, Folder } from "../types";
 import CollectionDetails from "./dashboard/CollectionDetails";
 import CollectionsSidebar from "./dashboard/CollectionsSidebar";
 import DashboardHeader from "./dashboard/DashboardHeader";
 import DashboardToasts from "./dashboard/DashboardToasts";
-import { panelClass, type ToastTone } from "./dashboard/constants";
+import { panelClass } from "./dashboard/constants";
+import type { DashboardUser } from "./dashboard/types";
 import { hasChromeTabsSupport } from "../utils/chrome";
 import type { BrowserTab } from "../utils/chrome";
-
-export type BannerTone = ToastTone;
-
-export type BannerAction = {
-  label: string;
-  onClick: () => void;
-};
-
-export type Banner = {
-  text: string;
-  tone: BannerTone;
-  action?: BannerAction;
-};
-
-export type BookmarkFormState = {
-  title: string;
-  url: string;
-  note: string;
-};
-
-export type DashboardUser = {
-  uid: string;
-  email?: string | null;
-};
 
 type DashboardProps = {
   user: DashboardUser;
   allowSync: boolean;
   initialCollections?: Collection[];
 };
-
-const getInitialBookmarkFormState = (): BookmarkFormState => ({
-  title: "",
-  url: "",
-  note: "",
-});
 
 const Dashboard = ({
   user,
@@ -70,154 +34,67 @@ const Dashboard = ({
       cacheKey: allowSync ? user.uid : undefined,
     },
   );
-  const [selectedCollectionId, setSelectedCollectionId] = useState<
-    string | null
-  >(null);
   const [newCollection, setNewCollection] = useState("");
   const [newFolder, setNewFolder] = useState("");
-  const [bookmarkForm, setBookmarkForm] = useState<BookmarkFormState>(
-    getInitialBookmarkFormState,
-  );
-  const [bookmarkModalFolderId, setBookmarkModalFolderId] = useState<
-    string | null
-  >(null);
-  const [creatingCollection, setCreatingCollection] = useState(false);
-  const [creatingFolder, setCreatingFolder] = useState(false);
-  const [savingBookmark, setSavingBookmark] = useState(false);
-  const [banner, setBanner] = useState<Banner | null>(null);
-  const [renderedBanner, setRenderedBanner] = useState<Banner | null>(null);
-  const [syncToastVisible, setSyncToastVisible] = useState(false);
-  const [syncToastShouldRender, setSyncToastShouldRender] = useState(false);
-  const wasRestoringRef = useRef(!allowSync);
-
-  useEffect(() => {
-    if (!collections.length) {
-      setSelectedCollectionId(null);
-      return;
-    }
-    if (
-      !selectedCollectionId ||
-      !collections.some((collection) => collection.id === selectedCollectionId)
-    ) {
-      setSelectedCollectionId(collections[0].id);
-    }
-  }, [collections, selectedCollectionId]);
-
-  const selectedCollection = useMemo(
-    () =>
-      collections.find(
-        (collection) => collection.id === selectedCollectionId,
-      ) ?? null,
-    [collections, selectedCollectionId],
-  );
-
-  useEffect(() => {
-    setBookmarkModalFolderId(null);
-    setBookmarkForm(getInitialBookmarkFormState());
-  }, [selectedCollectionId]);
-
-  const handleBookmarkFormChange = (
-    field: keyof BookmarkFormState,
-    value: string,
-  ) => {
-    setBookmarkForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const notify = (
-    text: string,
-    tone: BannerTone = "info",
-    action?: Banner["action"],
-  ) => {
-    const nextBanner: Banner = { text, tone, action };
-    setRenderedBanner(nextBanner);
-    setBanner(nextBanner);
-  };
-
-  const guardSync = () => {
-    if (!allowSync) {
-      notify("Still restoring your workspace. Please wait…", "info");
-      return true;
-    }
-    return false;
-  };
-
-  const closeBookmarkModal = () => {
-    setBookmarkModalFolderId(null);
-    setBookmarkForm(getInitialBookmarkFormState());
-  };
-
-  const openBookmarkModal = (folderId: string) => {
-    if (!selectedCollection || guardSync()) {
-      return;
-    }
-    setBookmarkModalFolderId(folderId);
-    setBookmarkForm(getInitialBookmarkFormState());
-  };
+  const { selectedCollectionId, setSelectedCollectionId, selectedCollection } =
+    useSelectedCollection(collections);
+  const {
+    bookmarkModalFolderId,
+    bookmarkForm,
+    openBookmarkModal,
+    closeBookmarkModal,
+    handleBookmarkFormChange,
+  } = useBookmarkModalState(selectedCollectionId);
+  const {
+    banner,
+    renderedBanner,
+    notify,
+    syncToastVisible,
+    syncToastShouldRender,
+    handleBannerDismiss,
+    handleBannerExited,
+    handleSyncToastDismiss,
+    handleSyncToastExited,
+  } = useDashboardNotifications(allowSync);
+  const {
+    creatingCollection,
+    creatingFolder,
+    savingBookmark,
+    guardSync,
+    createCollection: createCollectionAction,
+    deleteCollection: deleteCollectionAction,
+    createFolder: createFolderAction,
+    deleteFolder: deleteFolderAction,
+    saveBookmarks,
+    deleteBookmark: deleteBookmarkAction,
+    reorderFolders: reorderFoldersAction,
+    reorderBookmarks: reorderBookmarksAction,
+  } = useCollectionActions(user.uid, allowSync, notify);
 
   useEffect(() => {
     if (!allowSync) {
-      wasRestoringRef.current = true;
-      setSyncToastVisible(false);
-      setBookmarkModalFolderId(null);
-      setBookmarkForm(getInitialBookmarkFormState());
-      return;
+      closeBookmarkModal();
     }
-    if (wasRestoringRef.current && allowSync) {
-      wasRestoringRef.current = false;
-      setSyncToastShouldRender(true);
-      setSyncToastVisible(true);
-      const timeout = window.setTimeout(() => {
-        setSyncToastVisible(false);
-      }, 4000);
-      return () => window.clearTimeout(timeout);
-    }
-    return;
-  }, [allowSync]);
-
-  useEffect(() => {
-    if (!banner) {
-      return;
-    }
-    const timeout = window.setTimeout(() => {
-      setBanner(null);
-    }, 4000);
-    return () => window.clearTimeout(timeout);
-  }, [banner]);
+  }, [allowSync, closeBookmarkModal]);
 
   useEffect(() => {
     if (error) {
       notify(`Failed to sync collections: ${error.message}`, "danger");
     }
-  }, [error]);
+  }, [error, notify]);
 
-  const handleCreateCollection = async (event: React.FormEvent) => {
+  const handleCreateCollection = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!newCollection.trim() || guardSync()) {
-      return;
-    }
-    setCreatingCollection(true);
-    try {
-      const id = await createCollection(user.uid, newCollection);
-      setNewCollection("");
-      setSelectedCollectionId(id);
-      notify("Collection created.", "success");
-    } catch (err) {
-      notify(
-        err instanceof Error ? err.message : "Unable to create collection.",
-        "danger",
-      );
-    } finally {
-      setCreatingCollection(false);
-    }
+    void (async () => {
+      const id = await createCollectionAction(newCollection);
+      if (id) {
+        setNewCollection("");
+        setSelectedCollectionId(id);
+      }
+    })();
   };
 
-  const handleDeleteCollection = async (collection: Collection) => {
-    if (guardSync()) {
-      return;
-    }
+  const handleDeleteCollection = (collection: Collection) => {
     if (
       !window.confirm(
         `Delete collection "${collection.name}" and all folders within it?`,
@@ -225,41 +102,20 @@ const Dashboard = ({
     ) {
       return;
     }
-    try {
-      await deleteCollection(user.uid, collection.id);
-      notify("Collection removed.", "info");
-    } catch (err) {
-      notify(
-        err instanceof Error ? err.message : "Unable to delete collection.",
-        "danger",
-      );
-    }
+    void deleteCollectionAction(collection);
   };
 
-  const handleCreateFolder = async (event: React.FormEvent) => {
+  const handleCreateFolder = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!selectedCollection || !newFolder.trim() || guardSync()) {
-      return;
-    }
-    setCreatingFolder(true);
-    try {
-      await createFolder(user.uid, selectedCollection.id, newFolder);
-      setNewFolder("");
-      notify("Folder created.", "success");
-    } catch (err) {
-      notify(
-        err instanceof Error ? err.message : "Unable to create folder.",
-        "danger",
-      );
-    } finally {
-      setCreatingFolder(false);
-    }
+    void (async () => {
+      const created = await createFolderAction(selectedCollection, newFolder);
+      if (created) {
+        setNewFolder("");
+      }
+    })();
   };
 
-  const handleDeleteFolder = async (folder: Folder) => {
-    if (!selectedCollection || guardSync()) {
-      return;
-    }
+  const handleDeleteFolder = (folder: Folder) => {
     if (
       !window.confirm(
         `Delete folder "${folder.name}" and all of its bookmarks?`,
@@ -267,118 +123,36 @@ const Dashboard = ({
     ) {
       return;
     }
-    try {
-      await deleteFolder(user.uid, selectedCollection.id, folder.id);
-      notify("Folder removed.", "info");
-    } catch (err) {
-      notify(
-        err instanceof Error ? err.message : "Unable to delete folder.",
-        "danger",
-      );
-    }
+    void deleteFolderAction(selectedCollection, folder);
   };
 
-  const handleRestoreDeletedBookmark = async (
-    bookmark: Bookmark,
-    folderId: string,
-    collectionId: string,
-    targetIndex: number,
-  ) => {
-    if (guardSync()) {
-      return;
-    }
-    try {
-      await restoreBookmarkToFolder(
-        user.uid,
-        collectionId,
-        folderId,
-        bookmark,
-        targetIndex,
-      );
-      notify("Bookmark restored.", "success");
-    } catch (err) {
-      notify(
-        err instanceof Error ? err.message : "Unable to restore bookmark.",
-        "danger",
-      );
-    }
-  };
-
-  const saveBookmarksToFolder = async (
-    folderId: string,
-    bookmarks: BookmarkDraft[],
-    options: { closeModal?: boolean; resetForm?: boolean } = {},
-  ) => {
-    const { closeModal = false, resetForm = true } = options;
-    if (!selectedCollection || guardSync()) {
+  const handleOpenBookmarkModal = (folderId: string) => {
+    if (!selectedCollection) {
       notify("Create or select a collection first.", "danger");
       return;
     }
-    const folder = selectedCollection.folders.find(
-      (entry) => entry.id === folderId,
-    );
-    if (!folder) {
-      notify("The selected folder is no longer available.", "danger");
-      closeBookmarkModal();
+    if (guardSync()) {
       return;
     }
-
-    const trimmedBookmarks = bookmarks.map((bookmark) => ({
-      ...bookmark,
-      url: bookmark.url.trim(),
-    }));
-    const validBookmarks = trimmedBookmarks.filter((bookmark) => bookmark.url);
-    if (!validBookmarks.length) {
-      notify(
-        bookmarks.length === 1
-          ? "Provide a URL before saving a bookmark."
-          : "None of the selected tabs have a valid URL.",
-        "danger",
-      );
-      return;
-    }
-
-    setSavingBookmark(true);
-    try {
-      await addBookmarksToFolder(
-        user.uid,
-        selectedCollection.id,
-        folder.id,
-        validBookmarks,
-      );
-      notify(
-        validBookmarks.length === 1
-          ? "Bookmark saved."
-          : `${validBookmarks.length} bookmarks saved.`,
-        "success",
-      );
-      if (closeModal) {
-        closeBookmarkModal();
-      } else if (resetForm) {
-        setBookmarkForm(getInitialBookmarkFormState());
-      }
-    } catch (err) {
-      notify(
-        err instanceof Error ? err.message : "Unable to save bookmark.",
-        "danger",
-      );
-    } finally {
-      setSavingBookmark(false);
-    }
+    openBookmarkModal(folderId);
   };
 
-  const handleAddBookmark = async (
-    event: React.FormEvent,
+  const handleAddBookmark = (
+    event: React.FormEvent<HTMLFormElement>,
     folderId: string,
   ) => {
     event.preventDefault();
-    await saveBookmarksToFolder(folderId, [bookmarkForm], {
-      closeModal: true,
-      resetForm: false,
-    });
+    void (async () => {
+      const result = await saveBookmarks(selectedCollection, folderId, [
+        bookmarkForm,
+      ]);
+      if (result.success) {
+        closeBookmarkModal();
+      }
+    })();
   };
 
-  const handleAddBookmarksFromTabs = async (
+  const handleAddBookmarksFromTabs = (
     folderId: string,
     tabsToAdd: BrowserTab[],
   ) => {
@@ -389,88 +163,31 @@ const Dashboard = ({
       title: tab.title,
       url: tab.url,
     }));
-    await saveBookmarksToFolder(folderId, drafts, { closeModal: true });
+    void (async () => {
+      const result = await saveBookmarks(selectedCollection, folderId, drafts);
+      if (result.success) {
+        closeBookmarkModal();
+      }
+    })();
   };
 
-  const handleDeleteBookmark = async (folderId: string, bookmarkId: string) => {
-    if (!selectedCollection || guardSync()) {
-      return;
-    }
-    const collectionId = selectedCollection.id;
-    const folder = selectedCollection.folders.find(
-      (entry) => entry.id === folderId,
-    );
-    if (!folder) {
-      notify("The selected folder is no longer available.", "danger");
-      return;
-    }
-    const bookmarkIndex = folder.bookmarks.findIndex(
-      (entry) => entry.id === bookmarkId,
-    );
-    if (bookmarkIndex === -1) {
-      notify("The selected bookmark is no longer available.", "danger");
-      return;
-    }
-    const bookmark = folder.bookmarks[bookmarkIndex];
-    try {
-      await deleteBookmarkFromFolder(
-        user.uid,
-        collectionId,
-        folderId,
-        bookmarkId,
-      );
-      notify("Bookmark removed.", "info", {
-        label: "Undo",
-        onClick: () =>
-          handleRestoreDeletedBookmark(
-            bookmark,
-            folderId,
-            collectionId,
-            bookmarkIndex,
-          ),
-      });
-    } catch (err) {
-      notify(
-        err instanceof Error ? err.message : "Unable to delete bookmark.",
-        "danger",
-      );
-    }
+  const handleDeleteBookmark = (folderId: string, bookmarkId: string) => {
+    void deleteBookmarkAction(selectedCollection, folderId, bookmarkId);
   };
 
-  const handleReorderFolders = async (orderedFolderIds: string[]) => {
-    if (!selectedCollection || guardSync()) {
-      return;
-    }
-    try {
-      await reorderFolders(user.uid, selectedCollection.id, orderedFolderIds);
-    } catch (err) {
-      notify(
-        err instanceof Error ? err.message : "Unable to reorder folders.",
-        "danger",
-      );
-    }
+  const handleReorderFolders = (orderedFolderIds: string[]) => {
+    void reorderFoldersAction(selectedCollection, orderedFolderIds);
   };
 
-  const handleReorderBookmarks = async (
+  const handleReorderBookmarks = (
     folderId: string,
     orderedBookmarkIds: string[],
   ) => {
-    if (!selectedCollection || guardSync()) {
-      return;
-    }
-    try {
-      await reorderBookmarksInFolder(
-        user.uid,
-        selectedCollection.id,
-        folderId,
-        orderedBookmarkIds,
-      );
-    } catch (err) {
-      notify(
-        err instanceof Error ? err.message : "Unable to reorder bookmarks.",
-        "danger",
-      );
-    }
+    void reorderBookmarksAction(
+      selectedCollection,
+      folderId,
+      orderedBookmarkIds,
+    );
   };
 
   const noCollections = !loading && collections.length === 0;
@@ -510,7 +227,7 @@ const Dashboard = ({
             creatingFolder={creatingFolder}
             onCreateFolder={handleCreateFolder}
             onDeleteFolder={handleDeleteFolder}
-            onOpenBookmarkModal={openBookmarkModal}
+            onOpenBookmarkModal={handleOpenBookmarkModal}
             onCloseBookmarkModal={closeBookmarkModal}
             bookmarkModalFolderId={bookmarkModalFolderId}
             bookmarkForm={bookmarkForm}
@@ -538,10 +255,10 @@ const Dashboard = ({
         renderedBanner={renderedBanner}
         syncToastVisible={syncToastVisible}
         syncToastShouldRender={syncToastShouldRender}
-        onBannerExited={() => setRenderedBanner(null)}
-        onBannerDismiss={() => setBanner(null)}
-        onSyncToastExited={() => setSyncToastShouldRender(false)}
-        onSyncToastDismiss={() => setSyncToastVisible(false)}
+        onBannerExited={handleBannerExited}
+        onBannerDismiss={handleBannerDismiss}
+        onSyncToastExited={handleSyncToastExited}
+        onSyncToastDismiss={handleSyncToastDismiss}
       />
     </div>
   );

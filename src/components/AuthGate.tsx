@@ -10,7 +10,7 @@ import {
   faTriangleExclamation,
   faUserPlus,
 } from "@fortawesome/free-solid-svg-icons";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -18,9 +18,9 @@ import {
 import type { FormEvent, ReactNode } from "react";
 import { auth } from "../firebase/client";
 import { useAuthState } from "../hooks/useAuthState";
-import { getCachedCollections } from "../utils/cache";
+import { useCachedCollections } from "../hooks/useCachedCollections";
 import Dashboard from "./Dashboard";
-import type { Collection } from "../types";
+import WorkspaceBootstrap from "./WorkspaceBootstrap";
 
 const inputClasses =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20";
@@ -125,43 +125,13 @@ const AuthGate = () => {
 
   const workspaceUser = user ?? cachedUser ?? null;
   const isColdStart = initializing && !workspaceUser;
-  const [cachedCollections, setCachedCollectionsState] = useState<Collection[]>(
-    [],
+  const { cachedCollections } = useCachedCollections(
+    workspaceUser?.uid ?? null,
+    cacheReady,
   );
 
-  useEffect(() => {
-    let cancelled = false;
-    if (!workspaceUser) {
-      setCachedCollectionsState([]);
-      return;
-    }
-    if (!cacheReady) {
-      return;
-    }
-    const loadCachedCollections = async () => {
-      const data = await getCachedCollections(workspaceUser.uid);
-      if (!cancelled) {
-        setCachedCollectionsState(data);
-      }
-    };
-    void loadCachedCollections();
-    return () => {
-      cancelled = true;
-    };
-  }, [workspaceUser, cacheReady]);
-
   if (isColdStart) {
-    return (
-      <div className="rounded-2xl bg-white/90 p-6 text-center text-slate-600 shadow-xl ring-1 ring-slate-100 backdrop-blur">
-        <div className="flex justify-center text-indigo-500">
-          <FontAwesomeIcon icon={faSpinner} spin className="text-3xl" />
-        </div>
-        <h1 className="mt-3 text-xl font-semibold text-slate-900">
-          Preparing your workspace…
-        </h1>
-        <p className="mt-2 text-sm">Please wait while we sync your account.</p>
-      </div>
-    );
+    return <WorkspaceBootstrap />;
   }
 
   if (workspaceUser) {
