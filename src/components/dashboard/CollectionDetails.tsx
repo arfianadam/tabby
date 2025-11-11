@@ -496,7 +496,7 @@ const BookmarkCard = ({
         type="button"
         ref={setActivatorNodeRef}
         {...dragHandleProps}
-        className="absolute left-3 top-3 z-10 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-600 h-7 w-7 flex items-center justify-center cursor-grab disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200"
+        className="absolute left-4 top-4 z-10 text-slate-400 hover:text-slate-600 h-6 w-6 flex items-center justify-center cursor-grab disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200"
         aria-label={`Reorder bookmark ${bookmark.title}`}
         disabled={!allowSync}
       >
