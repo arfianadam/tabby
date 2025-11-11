@@ -42,6 +42,7 @@ type CollectionDetailsProps = {
   creatingFolder: boolean;
   onCreateFolder: (event: React.FormEvent<HTMLFormElement>) => void;
   onDeleteFolder: (folder: Folder) => void;
+  onRenameFolder: (folder: Folder, name: string) => Promise<boolean>;
   onOpenBookmarkModal: (folderId: string) => void;
   onCloseBookmarkModal: () => void;
   bookmarkModalFolderId: string | null;
@@ -68,6 +69,7 @@ const CollectionDetails = ({
   creatingFolder,
   onCreateFolder,
   onDeleteFolder,
+  onRenameFolder,
   onOpenBookmarkModal,
   onCloseBookmarkModal,
   bookmarkModalFolderId,
@@ -136,8 +138,7 @@ const CollectionDetails = ({
             onClick={() => onDeleteCollection(collection)}
             disabled={!allowSync}
           >
-            <FontAwesomeIcon icon={faTrash} className="mr-2" />
-            Delete collection
+            <FontAwesomeIcon icon={faTrash} />
           </button>
         </div>
         <form className="space-y-1" onSubmit={onCreateFolder}>
@@ -194,6 +195,7 @@ const CollectionDetails = ({
                       allowSync={allowSync}
                       onOpenBookmarkModal={onOpenBookmarkModal}
                       onDeleteFolder={onDeleteFolder}
+                      onRenameFolder={onRenameFolder}
                       onDeleteBookmark={onDeleteBookmark}
                       onReorderBookmarks={onReorderBookmarks}
                       faviconMap={faviconMap}

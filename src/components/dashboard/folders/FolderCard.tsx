@@ -1,16 +1,24 @@
-import type { CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBookmark,
+  faCheck,
   faFolderOpen,
   faGripVertical,
+  faPen,
   faPlus,
+  faSpinner,
   faTrash,
+  faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import type { Folder } from "../../../types";
-import { subtleButtonClasses } from "../constants";
+import {
+  actionButtonClasses,
+  inputClasses,
+  subtleButtonClasses,
+} from "../constants";
 import FolderBookmarks from "./FolderBookmarks";
 
 type FolderCardProps = {
@@ -18,6 +26,7 @@ type FolderCardProps = {
   allowSync: boolean;
   onOpenBookmarkModal: (folderId: string) => void;
   onDeleteFolder: (folder: Folder) => void;
+  onRenameFolder: (folder: Folder, name: string) => Promise<boolean>;
   onDeleteBookmark: (folderId: string, bookmarkId: string) => void;
   onReorderBookmarks: (folderId: string, orderedBookmarkIds: string[]) => void;
   faviconMap: Record<string, string | null>;
@@ -28,6 +37,7 @@ const FolderCard = ({
   allowSync,
   onOpenBookmarkModal,
   onDeleteFolder,
+  onRenameFolder,
   onDeleteBookmark,
   onReorderBookmarks,
   faviconMap,
@@ -49,6 +59,45 @@ const FolderCard = ({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.9 : undefined,
+  };
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState(folder.name);
+  const [renaming, setRenaming] = useState(false);
+
+  useEffect(() => {
+    if (!editingName) {
+      setNameDraft(folder.name);
+    }
+  }, [editingName, folder.name]);
+
+  useEffect(() => {
+    if (!allowSync && editingName) {
+      setEditingName(false);
+      setRenaming(false);
+      setNameDraft(folder.name);
+    }
+  }, [allowSync, editingName, folder.name]);
+
+  const handleRenameSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!allowSync || renaming) {
+      return;
+    }
+    setRenaming(true);
+    try {
+      const success = await onRenameFolder(folder, nameDraft);
+      if (success) {
+        setEditingName(false);
+      }
+    } finally {
+      setRenaming(false);
+    }
+  };
+
+  const cancelEditing = () => {
+    setEditingName(false);
+    setNameDraft(folder.name);
+    setRenaming(false);
   };
 
   return (
@@ -77,7 +126,7 @@ const FolderCard = ({
             {folder.bookmarks.length === 1 ? "" : "s"}
           </span>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex items-center flex-wrap gap-2">
           <button
             type="button"
             className={`${subtleButtonClasses} gap-2 text-indigo-700 hover:text-indigo-800`}
@@ -87,6 +136,19 @@ const FolderCard = ({
             <FontAwesomeIcon icon={faPlus} />
             Add bookmark
           </button>
+          {!editingName && (
+            <button
+              type="button"
+              className={`${subtleButtonClasses} gap-2 text-slate-600 hover:text-slate-700`}
+              onClick={() => {
+                setNameDraft(folder.name);
+                setEditingName(true);
+              }}
+              disabled={!allowSync}
+            >
+              <FontAwesomeIcon icon={faPen} />
+            </button>
+          )}
           <button
             type="button"
             className={`${subtleButtonClasses} gap-2 text-rose-600 hover:text-rose-700`}
@@ -94,10 +156,51 @@ const FolderCard = ({
             disabled={!allowSync}
           >
             <FontAwesomeIcon icon={faTrash} />
-            Delete folder
           </button>
         </div>
       </div>
+      {editingName && (
+        <form
+          className="mt-3 flex flex-wrap gap-2 items-center"
+          onSubmit={handleRenameSubmit}
+        >
+          <input
+            type="text"
+            value={nameDraft}
+            onChange={(event) => setNameDraft(event.target.value)}
+            className={`${inputClasses} flex-1 min-w-[180px]`}
+            placeholder="Folder name"
+            autoFocus
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault();
+                cancelEditing();
+              }
+            }}
+            disabled={!allowSync || renaming}
+          />
+          <button
+            type="submit"
+            className={`${actionButtonClasses} gap-2`}
+            disabled={!allowSync || renaming}
+          >
+            <FontAwesomeIcon
+              icon={renaming ? faSpinner : faCheck}
+              spin={renaming}
+            />
+            {renaming ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            className={`${subtleButtonClasses} gap-2`}
+            onClick={cancelEditing}
+            disabled={renaming}
+          >
+            <FontAwesomeIcon icon={faXmark} />
+            Cancel
+          </button>
+        </form>
+      )}
       {folder.bookmarks.length === 0 ? (
         <div className="mt-3 rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500 text-sm">
           <p>This folder is empty. Use “Add bookmark” to start filling it.</p>

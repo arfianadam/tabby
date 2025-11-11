@@ -65,6 +65,7 @@ const Dashboard = ({
     deleteCollection: deleteCollectionAction,
     createFolder: createFolderAction,
     deleteFolder: deleteFolderAction,
+    renameFolder: renameFolderAction,
     saveBookmarks,
     deleteBookmark: deleteBookmarkAction,
     reorderFolders: reorderFoldersAction,
@@ -125,6 +126,9 @@ const Dashboard = ({
     }
     void deleteFolderAction(selectedCollection, folder);
   };
+
+  const handleRenameFolder = (folder: Folder, nextName: string) =>
+    renameFolderAction(selectedCollection, folder, nextName);
 
   const handleOpenBookmarkModal = (folderId: string) => {
     if (!selectedCollection) {
@@ -227,6 +231,7 @@ const Dashboard = ({
             creatingFolder={creatingFolder}
             onCreateFolder={handleCreateFolder}
             onDeleteFolder={handleDeleteFolder}
+            onRenameFolder={handleRenameFolder}
             onOpenBookmarkModal={handleOpenBookmarkModal}
             onCloseBookmarkModal={closeBookmarkModal}
             bookmarkModalFolderId={bookmarkModalFolderId}

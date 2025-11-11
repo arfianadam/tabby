@@ -6,6 +6,7 @@ import {
   deleteBookmarkFromFolder,
   deleteCollection as requestDeleteCollection,
   deleteFolder as requestDeleteFolder,
+  renameFolder as requestRenameFolder,
   reorderBookmarksInFolder,
   reorderFolders,
   restoreBookmarkToFolder,
@@ -119,6 +120,31 @@ export const useCollectionActions = (
       } catch (err) {
         notify(
           err instanceof Error ? err.message : "Unable to delete folder.",
+          "danger",
+        );
+        return false;
+      }
+    },
+    [guardSync, notify, userId],
+  );
+
+  const renameFolder = useCallback(
+    async (collection: Collection | null, folder: Folder, name: string) => {
+      if (!collection || guardSync()) {
+        return false;
+      }
+      const trimmed = name.trim();
+      if (!trimmed) {
+        notify("Provide a folder name before saving.", "danger");
+        return false;
+      }
+      try {
+        await requestRenameFolder(userId, collection.id, folder.id, trimmed);
+        notify("Folder renamed.", "success");
+        return true;
+      } catch (err) {
+        notify(
+          err instanceof Error ? err.message : "Unable to rename folder.",
           "danger",
         );
         return false;
@@ -310,6 +336,7 @@ export const useCollectionActions = (
     deleteCollection,
     createFolder,
     deleteFolder,
+    renameFolder,
     saveBookmarks,
     deleteBookmark,
     reorderFolders: handleReorderFolders,

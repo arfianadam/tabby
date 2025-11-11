@@ -151,6 +151,36 @@ export const deleteFolder = async (
     folders: collection.folders.filter((folder) => folder.id !== folderId),
   }));
 
+export const renameFolder = async (
+  uid: string,
+  collectionId: string,
+  folderId: string,
+  name: string,
+) =>
+  mutateCollection(uid, collectionId, (collection) => {
+    let folderFound = false;
+    const folders = collection.folders.map((folder) => {
+      if (folder.id !== folderId) {
+        return folder;
+      }
+      folderFound = true;
+      const trimmed = name.trim();
+      return {
+        ...folder,
+        name: trimmed || "Untitled folder",
+      };
+    });
+
+    if (!folderFound) {
+      throw new Error("Folder not found.");
+    }
+
+    return {
+      ...collection,
+      folders,
+    };
+  });
+
 const normalizeUrl = (url: string) => {
   const trimmed = url.trim();
   if (!trimmed) {
