@@ -325,6 +325,93 @@ export const reorderFolders = async (
     };
   });
 
+export const moveBookmarkBetweenFolders = async (
+  uid: string,
+  collectionId: string,
+  sourceFolderId: string,
+  targetFolderId: string,
+  bookmarkId: string,
+  targetIndex: number,
+) =>
+  mutateCollection(uid, collectionId, (collection) => {
+    if (!bookmarkId) {
+      return collection;
+    }
+
+    const sourceFolder = collection.folders.find(
+      (folder) => folder.id === sourceFolderId,
+    );
+    if (!sourceFolder) {
+      throw new Error("Source folder not found.");
+    }
+
+    const bookmark = sourceFolder.bookmarks.find(
+      (entry) => entry.id === bookmarkId,
+    );
+    if (!bookmark) {
+      throw new Error("Bookmark not found in source folder.");
+    }
+
+    const targetFolder = collection.folders.find(
+      (folder) => folder.id === targetFolderId,
+    );
+    if (!targetFolder) {
+      throw new Error("Target folder not found.");
+    }
+
+    if (sourceFolderId === targetFolderId) {
+      const filtered = sourceFolder.bookmarks.filter(
+        (entry) => entry.id !== bookmarkId,
+      );
+      const boundedIndex = Math.max(0, Math.min(targetIndex, filtered.length));
+      const reordered = [...filtered];
+      reordered.splice(boundedIndex, 0, bookmark);
+      return {
+        ...collection,
+        folders: collection.folders.map((folder) =>
+          folder.id === sourceFolderId
+            ? {
+                ...folder,
+                bookmarks: reordered,
+              }
+            : folder,
+        ),
+      };
+    }
+
+    const sourceBookmarks = sourceFolder.bookmarks.filter(
+      (entry) => entry.id !== bookmarkId,
+    );
+    const targetBookmarks = targetFolder.bookmarks.filter(
+      (entry) => entry.id !== bookmarkId,
+    );
+    const boundedIndex = Math.max(
+      0,
+      Math.min(targetIndex, targetBookmarks.length),
+    );
+    const nextTargetBookmarks = [...targetBookmarks];
+    nextTargetBookmarks.splice(boundedIndex, 0, bookmark);
+
+    return {
+      ...collection,
+      folders: collection.folders.map((folder) => {
+        if (folder.id === sourceFolderId) {
+          return {
+            ...folder,
+            bookmarks: sourceBookmarks,
+          };
+        }
+        if (folder.id === targetFolderId) {
+          return {
+            ...folder,
+            bookmarks: nextTargetBookmarks,
+          };
+        }
+        return folder;
+      }),
+    };
+  });
+
 export const reorderBookmarksInFolder = async (
   uid: string,
   collectionId: string,

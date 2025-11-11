@@ -31,12 +31,18 @@ const BookmarkCard = ({
   } = useSortable({
     id: bookmark.id,
     disabled: !allowSync,
+    data: {
+      type: "bookmark",
+      folderId,
+      bookmarkId: bookmark.id,
+      bookmark,
+    },
   });
   const dragHandleProps = allowSync ? { ...attributes, ...listeners } : {};
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.95 : undefined,
+    visibility: isDragging ? "hidden" : undefined,
   };
   const fallbackInitial = (() => {
     const source =

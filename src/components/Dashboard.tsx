@@ -70,6 +70,7 @@ const Dashboard = ({
     deleteBookmark: deleteBookmarkAction,
     reorderFolders: reorderFoldersAction,
     reorderBookmarks: reorderBookmarksAction,
+    moveBookmark: moveBookmarkAction,
   } = useCollectionActions(user.uid, allowSync, notify);
 
   useEffect(() => {
@@ -194,6 +195,20 @@ const Dashboard = ({
     );
   };
 
+  const handleMoveBookmark = (
+    bookmarkId: string,
+    sourceFolderId: string,
+    targetFolderId: string,
+    targetIndex: number,
+  ) => {
+    void moveBookmarkAction(selectedCollection, {
+      bookmarkId,
+      sourceFolderId,
+      targetFolderId,
+      targetIndex,
+    });
+  };
+
   const noCollections = !loading && collections.length === 0;
 
   const handleSignOut = () => {
@@ -244,6 +259,7 @@ const Dashboard = ({
             onDeleteBookmark={handleDeleteBookmark}
             onReorderFolders={handleReorderFolders}
             onReorderBookmarks={handleReorderBookmarks}
+            onMoveBookmark={handleMoveBookmark}
           />
         ) : (
           <section className={`${panelClass} grow min-h-0`}>

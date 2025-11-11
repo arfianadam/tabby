@@ -13,7 +13,7 @@ import {
   faTrash,
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
-import type { Folder } from "../../../types";
+import type { Bookmark, Folder } from "../../../types";
 import {
   actionButtonClasses,
   inputClasses,
@@ -23,23 +23,23 @@ import FolderBookmarks from "./FolderBookmarks";
 
 type FolderCardProps = {
   folder: Folder;
+  bookmarks: Bookmark[];
   allowSync: boolean;
   onOpenBookmarkModal: (folderId: string) => void;
   onDeleteFolder: (folder: Folder) => void;
   onRenameFolder: (folder: Folder, name: string) => Promise<boolean>;
   onDeleteBookmark: (folderId: string, bookmarkId: string) => void;
-  onReorderBookmarks: (folderId: string, orderedBookmarkIds: string[]) => void;
   faviconMap: Record<string, string | null>;
 };
 
 const FolderCard = ({
   folder,
+  bookmarks,
   allowSync,
   onOpenBookmarkModal,
   onDeleteFolder,
   onRenameFolder,
   onDeleteBookmark,
-  onReorderBookmarks,
   faviconMap,
 }: FolderCardProps) => {
   const {
@@ -53,12 +53,16 @@ const FolderCard = ({
   } = useSortable({
     id: folder.id,
     disabled: !allowSync,
+    data: {
+      type: "folder",
+      folderId: folder.id,
+    },
   });
   const dragHandleProps = allowSync ? { ...attributes, ...listeners } : {};
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.9 : undefined,
+    visibility: isDragging ? "hidden" : undefined,
   };
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(folder.name);
@@ -122,8 +126,8 @@ const FolderCard = ({
           <span>{folder.name}</span>
           <span className="flex items-center gap-1 text-xs font-normal text-slate-500">
             <FontAwesomeIcon icon={faBookmark} />
-            {folder.bookmarks.length} bookmark
-            {folder.bookmarks.length === 1 ? "" : "s"}
+            {bookmarks.length} bookmark
+            {bookmarks.length === 1 ? "" : "s"}
           </span>
         </div>
         <div className="flex items-center flex-wrap gap-2">
@@ -200,20 +204,13 @@ const FolderCard = ({
           </button>
         </form>
       )}
-      {folder.bookmarks.length === 0 ? (
-        <div className="mt-3 rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500 text-sm">
-          <p>This folder is empty. Use “Add bookmark” to start filling it.</p>
-        </div>
-      ) : (
-        <FolderBookmarks
-          folderId={folder.id}
-          bookmarks={folder.bookmarks}
-          allowSync={allowSync}
-          onDeleteBookmark={onDeleteBookmark}
-          onReorderBookmarks={onReorderBookmarks}
-          faviconMap={faviconMap}
-        />
-      )}
+      <FolderBookmarks
+        folderId={folder.id}
+        bookmarks={bookmarks}
+        allowSync={allowSync}
+        onDeleteBookmark={onDeleteBookmark}
+        faviconMap={faviconMap}
+      />
     </article>
   );
 };

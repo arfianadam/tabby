@@ -1,15 +1,16 @@
 import { useCallback, useState } from "react";
 import {
-  addBookmarksToFolder,
+  addBookmarksToFolder as requestAddBookmarksToFolder,
   createCollection as requestCreateCollection,
   createFolder as requestCreateFolder,
   deleteBookmarkFromFolder,
   deleteCollection as requestDeleteCollection,
   deleteFolder as requestDeleteFolder,
   renameFolder as requestRenameFolder,
-  reorderBookmarksInFolder,
-  reorderFolders,
-  restoreBookmarkToFolder,
+  reorderBookmarksInFolder as requestReorderBookmarksInFolder,
+  reorderFolders as requestReorderFolders,
+  restoreBookmarkToFolder as requestRestoreBookmarkToFolder,
+  moveBookmarkBetweenFolders as requestMoveBookmarkBetweenFolders,
 } from "../../services/collections";
 import type { Bookmark, BookmarkDraft, Collection, Folder } from "../../types";
 import type { Banner } from "../../components/dashboard/types";
@@ -23,6 +24,13 @@ type NotifyFn = (
 export type SaveResult = {
   success: boolean;
   savedCount: number;
+};
+
+type MoveBookmarkParams = {
+  bookmarkId: string;
+  sourceFolderId: string;
+  targetFolderId: string;
+  targetIndex: number;
 };
 
 export const useCollectionActions = (
@@ -187,7 +195,12 @@ export const useCollectionActions = (
 
       setSavingBookmark(true);
       try {
-        await addBookmarksToFolder(userId, collection.id, folder.id, valid);
+        await requestAddBookmarksToFolder(
+          userId,
+          collection.id,
+          folder.id,
+          valid,
+        );
         notify(
           valid.length === 1
             ? "Bookmark saved."
@@ -217,7 +230,7 @@ export const useCollectionActions = (
     }) => {
       const { bookmark, folderId, collectionId, targetIndex } = params;
       try {
-        await restoreBookmarkToFolder(
+        await requestRestoreBookmarkToFolder(
           userId,
           collectionId,
           folderId,
@@ -284,13 +297,13 @@ export const useCollectionActions = (
     [guardSync, notify, restoreBookmark, userId],
   );
 
-  const handleReorderFolders = useCallback(
+  const reorderFolders = useCallback(
     async (collection: Collection | null, orderedFolderIds: string[]) => {
       if (!collection || guardSync()) {
         return;
       }
       try {
-        await reorderFolders(userId, collection.id, orderedFolderIds);
+        await requestReorderFolders(userId, collection.id, orderedFolderIds);
       } catch (err) {
         notify(
           err instanceof Error ? err.message : "Unable to reorder folders.",
@@ -301,7 +314,7 @@ export const useCollectionActions = (
     [guardSync, notify, userId],
   );
 
-  const handleReorderBookmarks = useCallback(
+  const reorderBookmarks = useCallback(
     async (
       collection: Collection | null,
       folderId: string,
@@ -311,7 +324,7 @@ export const useCollectionActions = (
         return;
       }
       try {
-        await reorderBookmarksInFolder(
+        await requestReorderBookmarksInFolder(
           userId,
           collection.id,
           folderId,
@@ -320,6 +333,32 @@ export const useCollectionActions = (
       } catch (err) {
         notify(
           err instanceof Error ? err.message : "Unable to reorder bookmarks.",
+          "danger",
+        );
+      }
+    },
+    [guardSync, notify, userId],
+  );
+
+  const moveBookmark = useCallback(
+    async (collection: Collection | null, params: MoveBookmarkParams) => {
+      if (!collection || guardSync()) {
+        return;
+      }
+      try {
+        await requestMoveBookmarkBetweenFolders(
+          userId,
+          collection.id,
+          params.sourceFolderId,
+          params.targetFolderId,
+          params.bookmarkId,
+          params.targetIndex,
+        );
+      } catch (err) {
+        notify(
+          err instanceof Error
+            ? err.message
+            : "Unable to move bookmark between folders.",
           "danger",
         );
       }
@@ -339,7 +378,8 @@ export const useCollectionActions = (
     renameFolder,
     saveBookmarks,
     deleteBookmark,
-    reorderFolders: handleReorderFolders,
-    reorderBookmarks: handleReorderBookmarks,
+    reorderFolders,
+    reorderBookmarks,
+    moveBookmark,
   };
 };
