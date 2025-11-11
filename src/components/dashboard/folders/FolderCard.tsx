@@ -129,17 +129,16 @@ const FolderCard = ({
         <div className="flex items-center flex-wrap gap-2">
           <button
             type="button"
-            className={`${subtleButtonClasses} gap-2 text-indigo-700 hover:text-indigo-800`}
+            className={`${subtleButtonClasses} text-indigo-700 hover:text-indigo-800`}
             onClick={() => onOpenBookmarkModal(folder.id)}
             disabled={!allowSync}
           >
             <FontAwesomeIcon icon={faPlus} />
-            Add bookmark
           </button>
           {!editingName && (
             <button
               type="button"
-              className={`${subtleButtonClasses} gap-2 text-slate-600 hover:text-slate-700`}
+              className={`${subtleButtonClasses} text-slate-600 hover:text-slate-700`}
               onClick={() => {
                 setNameDraft(folder.name);
                 setEditingName(true);
@@ -151,7 +150,7 @@ const FolderCard = ({
           )}
           <button
             type="button"
-            className={`${subtleButtonClasses} gap-2 text-rose-600 hover:text-rose-700`}
+            className={`${subtleButtonClasses} text-rose-600 hover:text-rose-700`}
             onClick={() => onDeleteFolder(folder)}
             disabled={!allowSync}
           >
