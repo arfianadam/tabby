@@ -266,3 +266,81 @@ export const restoreBookmarkToFolder = async (
       folders,
     };
   });
+
+export const reorderFolders = async (
+  uid: string,
+  collectionId: string,
+  orderedFolderIds: string[],
+) =>
+  mutateCollection(uid, collectionId, (collection) => {
+    if (!orderedFolderIds.length) {
+      return collection;
+    }
+
+    const seen = new Set(orderedFolderIds);
+    const ordered: Folder[] = [];
+    for (const folderId of orderedFolderIds) {
+      const folder = collection.folders.find((entry) => entry.id === folderId);
+      if (folder) {
+        ordered.push(folder);
+      }
+    }
+    const remaining = collection.folders.filter(
+      (folder) => !seen.has(folder.id),
+    );
+
+    return {
+      ...collection,
+      folders: [...ordered, ...remaining],
+    };
+  });
+
+export const reorderBookmarksInFolder = async (
+  uid: string,
+  collectionId: string,
+  folderId: string,
+  orderedBookmarkIds: string[],
+) =>
+  mutateCollection(uid, collectionId, (collection) => {
+    let folderFound = false;
+
+    const folders = collection.folders.map((folder) => {
+      if (folder.id !== folderId) {
+        return folder;
+      }
+
+      folderFound = true;
+
+      if (!orderedBookmarkIds.length) {
+        return folder;
+      }
+
+      const seen = new Set(orderedBookmarkIds);
+      const ordered: Bookmark[] = [];
+      for (const bookmarkId of orderedBookmarkIds) {
+        const bookmark = folder.bookmarks.find(
+          (entry) => entry.id === bookmarkId,
+        );
+        if (bookmark) {
+          ordered.push(bookmark);
+        }
+      }
+      const remaining = folder.bookmarks.filter(
+        (bookmark) => !seen.has(bookmark.id),
+      );
+
+      return {
+        ...folder,
+        bookmarks: [...ordered, ...remaining],
+      };
+    });
+
+    if (!folderFound) {
+      throw new Error("Folder not found.");
+    }
+
+    return {
+      ...collection,
+      folders,
+    };
+  });

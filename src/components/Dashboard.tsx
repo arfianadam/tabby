@@ -9,6 +9,8 @@ import {
   deleteBookmarkFromFolder,
   deleteCollection,
   deleteFolder,
+  reorderBookmarksInFolder,
+  reorderFolders,
   restoreBookmarkToFolder,
 } from "../services/collections";
 import type { Bookmark, BookmarkDraft, Collection, Folder } from "../types";
@@ -435,6 +437,42 @@ const Dashboard = ({
     }
   };
 
+  const handleReorderFolders = async (orderedFolderIds: string[]) => {
+    if (!selectedCollection || guardSync()) {
+      return;
+    }
+    try {
+      await reorderFolders(user.uid, selectedCollection.id, orderedFolderIds);
+    } catch (err) {
+      notify(
+        err instanceof Error ? err.message : "Unable to reorder folders.",
+        "danger",
+      );
+    }
+  };
+
+  const handleReorderBookmarks = async (
+    folderId: string,
+    orderedBookmarkIds: string[],
+  ) => {
+    if (!selectedCollection || guardSync()) {
+      return;
+    }
+    try {
+      await reorderBookmarksInFolder(
+        user.uid,
+        selectedCollection.id,
+        folderId,
+        orderedBookmarkIds,
+      );
+    } catch (err) {
+      notify(
+        err instanceof Error ? err.message : "Unable to reorder bookmarks.",
+        "danger",
+      );
+    }
+  };
+
   const noCollections = !loading && collections.length === 0;
 
   const handleSignOut = () => {
@@ -482,6 +520,8 @@ const Dashboard = ({
             savingBookmark={savingBookmark}
             hasChromeTabsSupport={hasChromeTabsSupport}
             onDeleteBookmark={handleDeleteBookmark}
+            onReorderFolders={handleReorderFolders}
+            onReorderBookmarks={handleReorderBookmarks}
           />
         ) : (
           <section className={`${panelClass} grow min-h-0`}>
