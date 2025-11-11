@@ -11,6 +11,7 @@ import {
 import type { Folder } from "../../types";
 import type { Collection } from "../../types";
 import type { BookmarkFormState } from "../Dashboard";
+import type { BrowserTab } from "../../utils/chrome";
 import { useBookmarkFavicons } from "../../hooks/useBookmarkFavicons";
 import {
   actionButtonClasses,
@@ -38,6 +39,7 @@ type CollectionDetailsProps = {
     event: React.FormEvent<HTMLFormElement>,
     folderId: string,
   ) => void;
+  onAddSelectedTabs: (folderId: string, tabs: BrowserTab[]) => void;
   savingBookmark: boolean;
   hasChromeTabsSupport: boolean;
   onDeleteBookmark: (folderId: string, bookmarkId: string) => void;
@@ -58,6 +60,7 @@ const CollectionDetails = ({
   bookmarkForm,
   onBookmarkFormChange,
   onAddBookmark,
+  onAddSelectedTabs,
   savingBookmark,
   hasChromeTabsSupport,
   onDeleteBookmark,
@@ -173,7 +176,7 @@ const CollectionDetails = ({
                       </p>
                     </div>
                   ) : (
-                    <div className="mt-3 grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-5">
+                    <div className="mt-3 flex gap-3 flex-wrap">
                       {folder.bookmarks.map((bookmark) => {
                         const faviconSrc = faviconMap[bookmark.id] ?? null;
                         const fallbackInitial = (() => {
@@ -186,7 +189,7 @@ const CollectionDetails = ({
                         return (
                           <article
                             key={bookmark.id}
-                            className="relative group rounded-2xl border border-slate-200 bg-white transition hover:border-indigo-200 focus-within:border-indigo-200"
+                            className="relative group rounded-2xl border border-slate-200 bg-white transition hover:border-indigo-200 focus-within:border-indigo-200 w-90 shrink-0"
                           >
                             <a
                               href={bookmark.url}
@@ -249,6 +252,7 @@ const CollectionDetails = ({
         bookmarkForm={bookmarkForm}
         onBookmarkFormChange={onBookmarkFormChange}
         onAddBookmark={onAddBookmark}
+        onAddSelectedTabs={onAddSelectedTabs}
         savingBookmark={savingBookmark}
         hasChromeTabsSupport={hasChromeTabsSupport}
         onClose={onCloseBookmarkModal}

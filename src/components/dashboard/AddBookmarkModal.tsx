@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBookmark,
+  faCheck,
   faListUl,
   faSpinner,
   faXmark,
@@ -23,6 +24,10 @@ type AddBookmarkModalProps = {
     event: React.FormEvent<HTMLFormElement>,
     folderId: string,
   ) => void;
+  onAddSelectedTabs: (
+    folderId: string,
+    tabs: BrowserTab[],
+  ) => Promise<void> | void;
   savingBookmark: boolean;
   hasChromeTabsSupport: boolean;
   onClose: () => void;
@@ -35,6 +40,7 @@ const AddBookmarkModal = ({
   bookmarkForm,
   onBookmarkFormChange,
   onAddBookmark,
+  onAddSelectedTabs,
   savingBookmark,
   hasChromeTabsSupport,
   onClose,
@@ -42,20 +48,23 @@ const AddBookmarkModal = ({
   const [tabs, setTabs] = useState<BrowserTab[]>([]);
   const [tabsLoading, setTabsLoading] = useState(false);
   const [tabError, setTabError] = useState<string | null>(null);
-  const [selectedTabId, setSelectedTabId] = useState<string | null>(null);
+  const [activeTabId, setActiveTabId] = useState<string | null>(null);
+  const [selectedTabIds, setSelectedTabIds] = useState<string[]>([]);
   const tabFavicons = useFavicons(tabs);
 
   useEffect(() => {
     if (!open) {
       setTabs([]);
-      setSelectedTabId(null);
+      setActiveTabId(null);
+      setSelectedTabIds([]);
       setTabError(null);
       setTabsLoading(false);
       return;
     }
     if (!hasChromeTabsSupport) {
       setTabs([]);
-      setSelectedTabId(null);
+      setActiveTabId(null);
+      setSelectedTabIds([]);
       return;
     }
     let cancelled = false;
@@ -75,7 +84,8 @@ const AddBookmarkModal = ({
               : "Unable to list tabs for this window.",
           );
           setTabs([]);
-          setSelectedTabId(null);
+          setActiveTabId(null);
+          setSelectedTabIds([]);
         }
       } finally {
         if (!cancelled) {
@@ -90,25 +100,63 @@ const AddBookmarkModal = ({
   }, [open, hasChromeTabsSupport]);
 
   useEffect(() => {
-    if (selectedTabId === null) {
+    if (activeTabId === null) {
       return;
     }
-    if (!tabs.some((tab) => tab.id === selectedTabId)) {
-      setSelectedTabId(null);
+    if (!tabs.some((tab) => tab.id === activeTabId)) {
+      setActiveTabId(null);
     }
-  }, [tabs, selectedTabId]);
+  }, [tabs, activeTabId]);
+
+  useEffect(() => {
+    setSelectedTabIds((prev) => {
+      const next = prev.filter((id) => tabs.some((tab) => tab.id === id));
+      if (next.length === prev.length) {
+        return prev;
+      }
+      return next;
+    });
+  }, [tabs]);
 
   if (!open || !folder) {
     return null;
   }
 
   const handleSelectTab = (tab: BrowserTab) => {
-    setSelectedTabId(tab.id);
+    setActiveTabId(tab.id);
     onBookmarkFormChange("title", tab.title);
     onBookmarkFormChange("url", tab.url);
   };
 
+  const toggleTabSelection = (tabId: string) => {
+    setSelectedTabIds((prev) =>
+      prev.includes(tabId)
+        ? prev.filter((id) => id !== tabId)
+        : [...prev, tabId],
+    );
+  };
+
+  const handleAddSelectedTabs = () => {
+    if (!selectedTabIds.length) {
+      return;
+    }
+    const orderedTabs = [...tabs].reverse();
+    const selectedTabs = orderedTabs.filter((tab) =>
+      selectedTabIds.includes(tab.id),
+    );
+    if (!selectedTabs.length) {
+      return;
+    }
+    void onAddSelectedTabs(folder.id, selectedTabs);
+  };
+
   const titleId = `add-bookmark-${folder.id}`;
+  const orderedTabs = [...tabs].reverse();
+  const selectedTabCount = selectedTabIds.length;
+  const addSelectedDisabled =
+    !allowSync || savingBookmark || selectedTabCount === 0;
+  const addSelectedLabel =
+    selectedTabCount === 1 ? "Add selected tab" : "Add selected tabs";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -121,7 +169,7 @@ const AddBookmarkModal = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="flex flex-col relative z-10 w-full max-w-4xl h-125 rounded-2xl bg-white shadow-2xl"
+        className="flex flex-col relative z-10 w-full max-w-6xl h-125 rounded-2xl bg-white shadow-2xl"
       >
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
           <div>
@@ -198,12 +246,34 @@ const AddBookmarkModal = ({
                 </button>
               </div>
             </div>
-            <div className="w-96 space-y-2 border-slate-100 border-l pl-4 flex flex-col">
+            <div className="w-160 space-y-2 border-slate-100 border-l pl-4 flex flex-col">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                   <FontAwesomeIcon icon={faListUl} />
                   Select from tabs in this window
                 </p>
+                <div className="flex items-center gap-3 text-xs text-slate-500">
+                  {selectedTabCount > 0 && (
+                    <span className="font-semibold text-slate-600">
+                      {selectedTabCount}{" "}
+                      {selectedTabCount === 1 ? "tab" : "tabs"} selected
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className={`${actionButtonClasses} gap-2 py-1.5 px-3 text-xs`}
+                    disabled={addSelectedDisabled}
+                    onClick={handleAddSelectedTabs}
+                  >
+                    <FontAwesomeIcon
+                      icon={savingBookmark ? faSpinner : faBookmark}
+                      spin={savingBookmark}
+                    />
+                    {savingBookmark && selectedTabCount > 0
+                      ? "Saving…"
+                      : addSelectedLabel}
+                  </button>
+                </div>
               </div>
               {!hasChromeTabsSupport ? (
                 <p className="text-xs text-slate-500">
@@ -223,8 +293,9 @@ const AddBookmarkModal = ({
                 </p>
               ) : (
                 <ul className="grow min-h-0 overflow-y-auto rounded-2xl border border-slate-200 bg-white text-left">
-                  {[...tabs].reverse().map((tab) => {
-                    const isSelected = tab.id === selectedTabId;
+                  {orderedTabs.map((tab) => {
+                    const isActive = tab.id === activeTabId;
+                    const isBatchSelected = selectedTabIds.includes(tab.id);
                     const faviconSrc = tabFavicons[tab.id] ?? null;
                     const fallbackInitial = (() => {
                       const source =
@@ -232,49 +303,65 @@ const AddBookmarkModal = ({
                         tab.url.replace(/^https?:\/\//i, "");
                       return source ? source.charAt(0).toUpperCase() : "•";
                     })();
+                    const toggleLabel = isBatchSelected
+                      ? "Deselect tab for batch add"
+                      : "Select tab for batch add";
                     return (
                       <li
                         key={tab.id}
                         className="border-b border-slate-100 last:border-b-0"
                       >
-                        <button
-                          type="button"
+                        <div
                           className={`flex w-full items-start gap-3 p-3 text-left transition ${
-                            isSelected ? "bg-indigo-50/80" : "hover:bg-slate-50"
+                            isActive ? "bg-indigo-50/80" : "hover:bg-slate-50"
                           }`}
-                          onClick={() => handleSelectTab(tab)}
                         >
-                          <span
-                            className={`mt-1 h-2.5 w-2.5 rounded-full border shrink-0 ${
-                              isSelected
-                                ? "border-indigo-600 bg-indigo-600"
-                                : "border-slate-300"
+                          <button
+                            type="button"
+                            className={`shrink-0 flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold transition ${
+                              isBatchSelected
+                                ? "border-indigo-600 bg-indigo-600 text-white"
+                                : "border-slate-300 text-slate-400 hover:border-indigo-300"
                             }`}
-                            aria-hidden="true"
-                          />
-                          <span className="mt-0.5 h-6 w-6 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                            {faviconSrc ? (
-                              <img
-                                src={faviconSrc}
-                                alt=""
-                                className="h-full w-full object-cover"
-                                loading="lazy"
-                              />
+                            aria-pressed={isBatchSelected}
+                            aria-label={toggleLabel}
+                            onClick={() => toggleTabSelection(tab.id)}
+                          >
+                            {isBatchSelected ? (
+                              <FontAwesomeIcon icon={faCheck} />
                             ) : (
-                              <span className="flex h-full w-full items-center justify-center">
-                                {fallbackInitial}
-                              </span>
+                              <span className="sr-only">{toggleLabel}</span>
                             )}
-                          </span>
-                          <span className="flex min-w-0 flex-col">
-                            <span className="text-sm font-medium text-slate-900 truncate">
-                              {tab.title}
+                          </button>
+                          <button
+                            type="button"
+                            className="flex-1 min-w-0 flex w-full items-start gap-3 text-left"
+                            onClick={() => handleSelectTab(tab)}
+                          >
+                            <span className="h-6 w-6 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                              {faviconSrc ? (
+                                <img
+                                  src={faviconSrc}
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <span className="flex h-full w-full items-center justify-center">
+                                  {fallbackInitial}
+                                </span>
+                              )}
                             </span>
-                            <span className="text-xs text-slate-500 break-all">
-                              {tab.url}
+                            <span className="flex min-w-0 flex-col">
+                              <span className="text-sm font-medium text-slate-900 truncate">
+                                {tab.title}
+                              </span>
+                              <span className="text-xs text-slate-500 break-all truncate">
+                                {tab.url}
+                              </span>
                             </span>
-                          </span>
-                        </button>
+                          </button>
+                        </div>
                       </li>
                     );
                   })}

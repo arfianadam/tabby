@@ -29,7 +29,7 @@ const normalizeBookmark = (bookmark: Partial<Bookmark>): Bookmark => ({
   id: bookmark.id ?? generateId(),
   title: (bookmark.title ?? "").trim() || "Untitled bookmark",
   url: bookmark.url ?? "",
-  note: bookmark.note?.trim(),
+  note: bookmark.note?.trim() || "",
   createdAt: bookmark.createdAt ?? Date.now(),
 });
 
@@ -162,31 +162,41 @@ const normalizeUrl = (url: string) => {
   return `https://${trimmed}`;
 };
 
-export const addBookmarkToFolder = async (
+const createBookmarkFromDraft = (draft: BookmarkDraft): Bookmark => ({
+  id: generateId(),
+  title: draft.title.trim() || draft.url,
+  url: normalizeUrl(draft.url),
+  note: draft.note?.trim() || "",
+  createdAt: Date.now(),
+});
+
+export const addBookmarksToFolder = async (
   uid: string,
   collectionId: string,
   folderId: string,
-  payload: BookmarkDraft,
-) =>
-  mutateCollection(uid, collectionId, (collection) => {
+  payloads: BookmarkDraft[],
+) => {
+  const validPayloads = payloads.filter((payload) => payload.url.trim());
+  if (!validPayloads.length) {
+    throw new Error("Provide at least one URL to save a bookmark.");
+  }
+
+  return mutateCollection(uid, collectionId, (collection) => {
+    let targetFolderFound = false;
+
     const folders = collection.folders.map((folder) => {
       if (folder.id !== folderId) {
         return folder;
       }
-      const bookmark: Bookmark = {
-        id: generateId(),
-        title: payload.title.trim() || payload.url,
-        url: normalizeUrl(payload.url),
-        note: payload.note?.trim(),
-        createdAt: Date.now(),
-      };
+      targetFolderFound = true;
+      const bookmarks = validPayloads.map(createBookmarkFromDraft);
       return {
         ...folder,
-        bookmarks: [bookmark, ...folder.bookmarks],
+        bookmarks: [...bookmarks, ...folder.bookmarks],
       };
     });
 
-    if (!folders.some((folder) => folder.id === folderId)) {
+    if (!targetFolderFound) {
       throw new Error("Folder not found.");
     }
 
@@ -195,6 +205,7 @@ export const addBookmarkToFolder = async (
       folders,
     };
   });
+};
 
 export const deleteBookmarkFromFolder = async (
   uid: string,

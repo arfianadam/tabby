@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { auth } from "../firebase/client";
 import { useCollections } from "../hooks/useCollections";
 import {
-  addBookmarkToFolder,
+  addBookmarksToFolder,
   createCollection,
   createFolder,
   deleteBookmarkFromFolder,
@@ -11,13 +11,14 @@ import {
   deleteFolder,
   restoreBookmarkToFolder,
 } from "../services/collections";
-import type { Bookmark, Collection, Folder } from "../types";
+import type { Bookmark, BookmarkDraft, Collection, Folder } from "../types";
 import CollectionDetails from "./dashboard/CollectionDetails";
 import CollectionsSidebar from "./dashboard/CollectionsSidebar";
 import DashboardHeader from "./dashboard/DashboardHeader";
 import DashboardToasts from "./dashboard/DashboardToasts";
 import { panelClass, type ToastTone } from "./dashboard/constants";
 import { hasChromeTabsSupport } from "../utils/chrome";
+import type { BrowserTab } from "../utils/chrome";
 
 export type BannerTone = ToastTone;
 
@@ -301,12 +302,12 @@ const Dashboard = ({
     }
   };
 
-  const saveBookmarkToFolder = async (
+  const saveBookmarksToFolder = async (
     folderId: string,
-    bookmarkData: BookmarkFormState,
-    options: { closeModal?: boolean } = {},
+    bookmarks: BookmarkDraft[],
+    options: { closeModal?: boolean; resetForm?: boolean } = {},
   ) => {
-    const { closeModal = false } = options;
+    const { closeModal = false, resetForm = true } = options;
     if (!selectedCollection || guardSync()) {
       notify("Create or select a collection first.", "danger");
       return;
@@ -319,22 +320,39 @@ const Dashboard = ({
       closeBookmarkModal();
       return;
     }
-    if (!bookmarkData.url.trim()) {
-      notify("Provide a URL before saving a bookmark.", "danger");
+
+    const trimmedBookmarks = bookmarks.map((bookmark) => ({
+      ...bookmark,
+      url: bookmark.url.trim(),
+    }));
+    const validBookmarks = trimmedBookmarks.filter((bookmark) => bookmark.url);
+    if (!validBookmarks.length) {
+      notify(
+        bookmarks.length === 1
+          ? "Provide a URL before saving a bookmark."
+          : "None of the selected tabs have a valid URL.",
+        "danger",
+      );
       return;
     }
+
     setSavingBookmark(true);
     try {
-      await addBookmarkToFolder(
+      await addBookmarksToFolder(
         user.uid,
         selectedCollection.id,
         folder.id,
-        bookmarkData,
+        validBookmarks,
       );
-      notify("Bookmark saved.", "success");
+      notify(
+        validBookmarks.length === 1
+          ? "Bookmark saved."
+          : `${validBookmarks.length} bookmarks saved.`,
+        "success",
+      );
       if (closeModal) {
         closeBookmarkModal();
-      } else {
+      } else if (resetForm) {
         setBookmarkForm(getInitialBookmarkFormState());
       }
     } catch (err) {
@@ -352,7 +370,24 @@ const Dashboard = ({
     folderId: string,
   ) => {
     event.preventDefault();
-    await saveBookmarkToFolder(folderId, bookmarkForm, { closeModal: true });
+    await saveBookmarksToFolder(folderId, [bookmarkForm], {
+      closeModal: true,
+      resetForm: false,
+    });
+  };
+
+  const handleAddBookmarksFromTabs = async (
+    folderId: string,
+    tabsToAdd: BrowserTab[],
+  ) => {
+    if (!tabsToAdd.length) {
+      return;
+    }
+    const drafts: BookmarkDraft[] = tabsToAdd.map((tab) => ({
+      title: tab.title,
+      url: tab.url,
+    }));
+    await saveBookmarksToFolder(folderId, drafts, { closeModal: true });
   };
 
   const handleDeleteBookmark = async (folderId: string, bookmarkId: string) => {
@@ -443,6 +478,7 @@ const Dashboard = ({
             bookmarkForm={bookmarkForm}
             onBookmarkFormChange={handleBookmarkFormChange}
             onAddBookmark={handleAddBookmark}
+            onAddSelectedTabs={handleAddBookmarksFromTabs}
             savingBookmark={savingBookmark}
             hasChromeTabsSupport={hasChromeTabsSupport}
             onDeleteBookmark={handleDeleteBookmark}

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "devBuild": "NODE_ENV=development vite build --mode development",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "format": "prettier --write .",
