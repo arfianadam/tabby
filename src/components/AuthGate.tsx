@@ -25,9 +25,9 @@ import type { Collection } from "../types";
 const inputClasses =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20";
 const primaryButtonClasses =
-  "inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-500 transition disabled:cursor-not-allowed disabled:opacity-60";
+  "cursor-pointer inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-500 transition disabled:cursor-not-allowed disabled:opacity-60";
 const subtleButtonClasses =
-  "inline-flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition";
+  "cursor-pointer inline-flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition";
 
 const bannerToneClasses = {
   info: "border-sky-200 bg-sky-50 text-sky-800",
@@ -199,7 +199,7 @@ const AuthGate = () => {
       : faUserPlus;
 
   return (
-    <div className="rounded-3xl bg-white/90 p-6 shadow-2xl ring-1 ring-slate-100 backdrop-blur">
+    <div className="w-full max-w-3xl mx-auto mt-60 rounded-3xl bg-white/90 p-6 shadow-2xl ring-1 ring-slate-100 backdrop-blur">
       <div className="flex flex-col gap-4">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">

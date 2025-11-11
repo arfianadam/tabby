@@ -448,9 +448,7 @@ const Dashboard = ({
             onDeleteBookmark={handleDeleteBookmark}
           />
         ) : (
-          <section
-            className={`${panelClass} min-h-[70vh] lg:max-h-[80vh] lg:overflow-hidden`}
-          >
+          <section className={`${panelClass} grow min-h-0`}>
             <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500">
               {allowSync && loading
                 ? "Loading your collections…"
