@@ -1,8 +1,5 @@
-import type { CSSProperties } from "react";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGripVertical, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import type { Bookmark } from "../../../types";
 
 type BookmarkCardProps = {
@@ -20,30 +17,6 @@ const BookmarkCard = ({
   faviconSrc,
   onDeleteBookmark,
 }: BookmarkCardProps) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    setActivatorNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: bookmark.id,
-    disabled: !allowSync,
-    data: {
-      type: "bookmark",
-      folderId,
-      bookmarkId: bookmark.id,
-      bookmark,
-    },
-  });
-  const dragHandleProps = allowSync ? { ...attributes, ...listeners } : {};
-  const style: CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    visibility: isDragging ? "hidden" : undefined,
-  };
   const fallbackInitial = (() => {
     const source =
       bookmark.title.trim() || bookmark.url.replace(/^https?:\/\//i, "");
@@ -51,28 +24,12 @@ const BookmarkCard = ({
   })();
 
   return (
-    <article
-      ref={setNodeRef}
-      style={style}
-      className="relative group rounded-2xl border border-slate-200 bg-white transition-colors hover:border-indigo-200 focus-within:border-indigo-200 w-90 shrink-0"
-    >
-      {allowSync && (
-        <button
-          type="button"
-          ref={setActivatorNodeRef}
-          {...dragHandleProps}
-          className="absolute left-4 top-4 z-10 text-slate-400 hover:text-slate-600 h-6 w-6 flex items-center justify-center cursor-grab disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200"
-          aria-label={`Reorder bookmark ${bookmark.title}`}
-          disabled={!allowSync}
-        >
-          <FontAwesomeIcon icon={faGripVertical} />
-        </button>
-      )}
+    <article className="relative group rounded-2xl border border-slate-200 bg-white transition-colors hover:border-indigo-200 focus-within:border-indigo-200 max-w-90 shrink-0">
       <a
         href={bookmark.url}
         target="_self"
         className={`block h-full rounded-2xl p-4 ${
-          allowSync ? "pl-10 pr-10" : "px-4"
+          allowSync ? "pr-12" : "pr-4.5"
         } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white`}
       >
         <div className="flex flex-col gap-2">
@@ -102,7 +59,7 @@ const BookmarkCard = ({
       </a>
       {allowSync && (
         <button
-          className="absolute right-4 top-4 z-10 rounded-full text-slate-400 hover:bg-rose-50 cursor-pointer hover:text-rose-600 h-6 w-6 flex items-center justify-center"
+          className="absolute right-3 top-4 z-10 rounded-full text-slate-400 hover:bg-rose-50 cursor-pointer hover:text-rose-600 h-6 w-6 flex items-center justify-center"
           type="button"
           onClick={() => onDeleteBookmark(folderId, bookmark.id)}
           disabled={!allowSync}

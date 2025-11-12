@@ -1,12 +1,9 @@
-import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { useEffect, useState, type FormEvent } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBookmark,
   faCheck,
   faFolderOpen,
-  faGripVertical,
   faPen,
   faPlus,
   faSpinner,
@@ -42,28 +39,6 @@ const FolderCard = ({
   onDeleteBookmark,
   faviconMap,
 }: FolderCardProps) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    setActivatorNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: folder.id,
-    disabled: !allowSync,
-    data: {
-      type: "folder",
-      folderId: folder.id,
-    },
-  });
-  const dragHandleProps = allowSync ? { ...attributes, ...listeners } : {};
-  const style: CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    visibility: isDragging ? "hidden" : undefined,
-  };
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(folder.name);
   const [renaming, setRenaming] = useState(false);
@@ -105,25 +80,9 @@ const FolderCard = ({
   };
 
   return (
-    <article
-      ref={setNodeRef}
-      style={style}
-      className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 flex flex-col"
-    >
+    <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 flex flex-col">
       <div className="flex gap-2 items-center justify-between">
         <div className="flex flex-wrap items-center gap-2 text-slate-900 font-semibold">
-          {allowSync && (
-            <button
-              type="button"
-              ref={setActivatorNodeRef}
-              {...dragHandleProps}
-              className="h-8 w-8 rounded-full text-slate-400 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center cursor-grab"
-              aria-label={`Reorder folder ${folder.name}`}
-              disabled={!allowSync}
-            >
-              <FontAwesomeIcon icon={faGripVertical} />
-            </button>
-          )}
           <FontAwesomeIcon icon={faFolderOpen} className="text-indigo-500" />
           <span>{folder.name}</span>
           <span className="flex items-center gap-1 text-xs font-normal text-slate-500">

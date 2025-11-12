@@ -60,7 +60,7 @@ const DashboardHeader = ({
           </div>
         </div>
         <button
-          className={`inline-flex items-center gap-3 rounded-xl border px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
+          className={`${subtleButtonClasses} gap-2 ${
             editMode
               ? "border-indigo-200 bg-indigo-50 text-indigo-700"
               : "border-slate-200 bg-white text-slate-600"
