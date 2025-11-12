@@ -48,6 +48,7 @@ import FolderCard from "./folders/FolderCard";
 type CollectionDetailsProps = {
   collection: Collection;
   allowSync: boolean;
+  editMode: boolean;
   onDeleteCollection: (collection: Collection) => void;
   newFolder: string;
   onNewFolderChange: (value: string) => void;
@@ -109,6 +110,7 @@ const isBookmarkContainerData = (
 const CollectionDetails = ({
   collection,
   allowSync,
+  editMode,
   onDeleteCollection,
   newFolder,
   onNewFolderChange,
@@ -130,6 +132,7 @@ const CollectionDetails = ({
   onReorderBookmarks,
   onMoveBookmark,
 }: CollectionDetailsProps) => {
+  const editingEnabled = allowSync && editMode;
   const activeBookmarkFolder =
     collection.folders.find((folder) => folder.id === bookmarkModalFolderId) ??
     null;
@@ -408,7 +411,7 @@ const CollectionDetails = ({
   };
 
   const handleFolderDragEnd = (event: DragEndEvent) => {
-    if (!allowSync) {
+    if (!editingEnabled) {
       return;
     }
     const { active, over } = event;
@@ -433,6 +436,10 @@ const CollectionDetails = ({
   };
 
   const handleDragStart = (event: DragStartEvent) => {
+    if (!editingEnabled) {
+      activeDragTypeRef.current = null;
+      return;
+    }
     const data = event.active.data.current;
     if (!isBookmarkDragData(data)) {
       if (data?.type === "folder") {
@@ -458,7 +465,7 @@ const CollectionDetails = ({
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    if (!allowSync) {
+    if (!editingEnabled) {
       return;
     }
     const { active, over } = event;
@@ -566,7 +573,7 @@ const CollectionDetails = ({
   const handleDragEnd = (event: DragEndEvent) => {
     const data = event.active.data.current;
     if (isBookmarkDragData(data)) {
-      if (!allowSync || !event.over) {
+      if (!editingEnabled || !event.over) {
         resetBookmarkDragState(true);
         return;
       }
@@ -599,49 +606,57 @@ const CollectionDetails = ({
           <h2 className="text-xl font-semibold text-slate-900">
             {collection.name}
           </h2>
-          <button
-            className={`${subtleButtonClasses} text-rose-600 hover:text-rose-700`}
-            type="button"
-            onClick={() => onDeleteCollection(collection)}
-            disabled={!allowSync}
-          >
-            <FontAwesomeIcon icon={faTrash} />
-          </button>
-        </div>
-        <form className="space-y-1" onSubmit={onCreateFolder}>
-          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            New folder
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Ex: Launch inspiration"
-              value={newFolder}
-              disabled={!collection || !allowSync}
-              onChange={(event) => onNewFolderChange(event.target.value)}
-              className={`${inputClasses} ${
-                !collection || !allowSync ? "cursor-not-allowed opacity-60" : ""
-              }`}
-            />
+          {editingEnabled && (
             <button
-              type="submit"
-              disabled={creatingFolder || !collection || !allowSync}
-              className={`${actionButtonClasses} gap-2`}
+              className={`${subtleButtonClasses} text-rose-600 hover:text-rose-700`}
+              type="button"
+              onClick={() => onDeleteCollection(collection)}
+              disabled={!editingEnabled}
             >
-              <FontAwesomeIcon
-                icon={creatingFolder ? faSpinner : faPlus}
-                spin={creatingFolder}
-              />
-              {creatingFolder ? "Adding…" : "Add"}
+              <FontAwesomeIcon icon={faTrash} />
             </button>
-          </div>
-        </form>
+          )}
+        </div>
+        {editingEnabled && (
+          <form className="space-y-1" onSubmit={onCreateFolder}>
+            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              New folder
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Ex: Launch inspiration"
+                value={newFolder}
+                disabled={!collection || !editingEnabled}
+                onChange={(event) => onNewFolderChange(event.target.value)}
+                className={`${inputClasses} ${
+                  !collection || !editingEnabled
+                    ? "cursor-not-allowed opacity-60"
+                    : ""
+                }`}
+              />
+              <button
+                type="submit"
+                disabled={creatingFolder || !collection || !editingEnabled}
+                className={`${actionButtonClasses} gap-2`}
+              >
+                <FontAwesomeIcon
+                  icon={creatingFolder ? faSpinner : faPlus}
+                  spin={creatingFolder}
+                />
+                {creatingFolder ? "Adding…" : "Add"}
+              </button>
+            </div>
+          </form>
+        )}
         <div className="grow flex flex-col gap-4 overflow-hidden">
           {collection.folders.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500">
               <p className="flex items-center justify-center gap-2 text-sm">
                 <FontAwesomeIcon icon={faFolder} />
-                No folders yet. Add one above to start saving bookmarks.
+                {editingEnabled
+                  ? "No folders yet. Add one above to start saving bookmarks."
+                  : "No folders yet. Enable edit mode to add folders."}
               </p>
             </div>
           ) : (
@@ -663,7 +678,7 @@ const CollectionDetails = ({
                       key={folder.id}
                       folder={folder}
                       bookmarks={getBookmarksForFolder(folder)}
-                      allowSync={allowSync}
+                      allowSync={editingEnabled}
                       onOpenBookmarkModal={onOpenBookmarkModal}
                       onDeleteFolder={onDeleteFolder}
                       onRenameFolder={onRenameFolder}
@@ -697,8 +712,8 @@ const CollectionDetails = ({
       </div>
       <AddBookmarkModal
         folder={activeBookmarkFolder}
-        open={Boolean(activeBookmarkFolder)}
-        allowSync={allowSync}
+        open={Boolean(activeBookmarkFolder) && editingEnabled}
+        allowSync={editingEnabled}
         bookmarkForm={bookmarkForm}
         onBookmarkFormChange={onBookmarkFormChange}
         onAddBookmark={onAddBookmark}

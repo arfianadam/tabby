@@ -36,6 +36,8 @@ const Dashboard = ({
   );
   const [newCollection, setNewCollection] = useState("");
   const [newFolder, setNewFolder] = useState("");
+  const [editMode, setEditMode] = useState(false);
+  const editingEnabled = allowSync && editMode;
   const { selectedCollectionId, setSelectedCollectionId, selectedCollection } =
     useSelectedCollection(collections);
   const {
@@ -76,8 +78,15 @@ const Dashboard = ({
   useEffect(() => {
     if (!allowSync) {
       closeBookmarkModal();
+      setEditMode(false);
     }
   }, [allowSync, closeBookmarkModal]);
+
+  useEffect(() => {
+    if (!editMode) {
+      closeBookmarkModal();
+    }
+  }, [editMode, closeBookmarkModal]);
 
   useEffect(() => {
     if (error) {
@@ -87,6 +96,9 @@ const Dashboard = ({
 
   const handleCreateCollection = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!editingEnabled) {
+      return;
+    }
     void (async () => {
       const id = await createCollectionAction(newCollection);
       if (id) {
@@ -97,6 +109,9 @@ const Dashboard = ({
   };
 
   const handleDeleteCollection = (collection: Collection) => {
+    if (!editingEnabled) {
+      return;
+    }
     if (
       !window.confirm(
         `Delete collection "${collection.name}" and all folders within it?`,
@@ -109,6 +124,9 @@ const Dashboard = ({
 
   const handleCreateFolder = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!editingEnabled) {
+      return;
+    }
     void (async () => {
       const created = await createFolderAction(selectedCollection, newFolder);
       if (created) {
@@ -118,6 +136,9 @@ const Dashboard = ({
   };
 
   const handleDeleteFolder = (folder: Folder) => {
+    if (!editingEnabled) {
+      return;
+    }
     if (
       !window.confirm(
         `Delete folder "${folder.name}" and all of its bookmarks?`,
@@ -128,10 +149,17 @@ const Dashboard = ({
     void deleteFolderAction(selectedCollection, folder);
   };
 
-  const handleRenameFolder = (folder: Folder, nextName: string) =>
-    renameFolderAction(selectedCollection, folder, nextName);
+  const handleRenameFolder = (folder: Folder, nextName: string) => {
+    if (!editingEnabled) {
+      return Promise.resolve(false);
+    }
+    return renameFolderAction(selectedCollection, folder, nextName);
+  };
 
   const handleOpenBookmarkModal = (folderId: string) => {
+    if (!editingEnabled) {
+      return;
+    }
     if (!selectedCollection) {
       notify("Create or select a collection first.", "danger");
       return;
@@ -147,6 +175,9 @@ const Dashboard = ({
     folderId: string,
   ) => {
     event.preventDefault();
+    if (!editingEnabled) {
+      return;
+    }
     void (async () => {
       const result = await saveBookmarks(selectedCollection, folderId, [
         bookmarkForm,
@@ -161,6 +192,9 @@ const Dashboard = ({
     folderId: string,
     tabsToAdd: BrowserTab[],
   ) => {
+    if (!editingEnabled) {
+      return;
+    }
     if (!tabsToAdd.length) {
       return;
     }
@@ -177,10 +211,16 @@ const Dashboard = ({
   };
 
   const handleDeleteBookmark = (folderId: string, bookmarkId: string) => {
+    if (!editingEnabled) {
+      return;
+    }
     void deleteBookmarkAction(selectedCollection, folderId, bookmarkId);
   };
 
   const handleReorderFolders = (orderedFolderIds: string[]) => {
+    if (!editingEnabled) {
+      return;
+    }
     void reorderFoldersAction(selectedCollection, orderedFolderIds);
   };
 
@@ -188,6 +228,9 @@ const Dashboard = ({
     folderId: string,
     orderedBookmarkIds: string[],
   ) => {
+    if (!editingEnabled) {
+      return;
+    }
     void reorderBookmarksAction(
       selectedCollection,
       folderId,
@@ -201,6 +244,9 @@ const Dashboard = ({
     targetFolderId: string,
     targetIndex: number,
   ) => {
+    if (!editingEnabled) {
+      return;
+    }
     void moveBookmarkAction(selectedCollection, {
       bookmarkId,
       sourceFolderId,
@@ -220,11 +266,14 @@ const Dashboard = ({
       <DashboardHeader
         allowSync={allowSync}
         user={user}
+        editMode={editMode}
+        onToggleEditMode={() => setEditMode((prev) => !prev)}
         onSignOut={handleSignOut}
       />
       <div className="grow grid gap-2 grid-cols-[260px_1fr] min-h-0 items-stretch">
         <CollectionsSidebar
           allowSync={allowSync}
+          editMode={editMode}
           collections={collections}
           selectedCollectionId={selectedCollectionId}
           newCollection={newCollection}
@@ -240,6 +289,7 @@ const Dashboard = ({
           <CollectionDetails
             collection={selectedCollection}
             allowSync={allowSync}
+            editMode={editMode}
             onDeleteCollection={handleDeleteCollection}
             newFolder={newFolder}
             onNewFolderChange={setNewFolder}

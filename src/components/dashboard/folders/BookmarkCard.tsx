@@ -56,20 +56,24 @@ const BookmarkCard = ({
       style={style}
       className="relative group rounded-2xl border border-slate-200 bg-white transition-colors hover:border-indigo-200 focus-within:border-indigo-200 w-90 shrink-0"
     >
-      <button
-        type="button"
-        ref={setActivatorNodeRef}
-        {...dragHandleProps}
-        className="absolute left-4 top-4 z-10 text-slate-400 hover:text-slate-600 h-6 w-6 flex items-center justify-center cursor-grab disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200"
-        aria-label={`Reorder bookmark ${bookmark.title}`}
-        disabled={!allowSync}
-      >
-        <FontAwesomeIcon icon={faGripVertical} />
-      </button>
+      {allowSync && (
+        <button
+          type="button"
+          ref={setActivatorNodeRef}
+          {...dragHandleProps}
+          className="absolute left-4 top-4 z-10 text-slate-400 hover:text-slate-600 h-6 w-6 flex items-center justify-center cursor-grab disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200"
+          aria-label={`Reorder bookmark ${bookmark.title}`}
+          disabled={!allowSync}
+        >
+          <FontAwesomeIcon icon={faGripVertical} />
+        </button>
+      )}
       <a
         href={bookmark.url}
         target="_self"
-        className="block h-full rounded-2xl p-4 pl-10 pr-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+        className={`block h-full rounded-2xl p-4 ${
+          allowSync ? "pl-10 pr-10" : "px-4"
+        } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white`}
       >
         <div className="flex flex-col gap-2">
           <div className="flex items-start gap-2">
@@ -96,15 +100,17 @@ const BookmarkCard = ({
           )}
         </div>
       </a>
-      <button
-        className="absolute right-4 top-4 z-10 rounded-full text-slate-400 hover:bg-rose-50 cursor-pointer hover:text-rose-600 h-6 w-6 flex items-center justify-center"
-        type="button"
-        onClick={() => onDeleteBookmark(folderId, bookmark.id)}
-        disabled={!allowSync}
-        aria-label={`Delete bookmark ${bookmark.title}`}
-      >
-        <FontAwesomeIcon icon={faTrash} />
-      </button>
+      {allowSync && (
+        <button
+          className="absolute right-4 top-4 z-10 rounded-full text-slate-400 hover:bg-rose-50 cursor-pointer hover:text-rose-600 h-6 w-6 flex items-center justify-center"
+          type="button"
+          onClick={() => onDeleteBookmark(folderId, bookmark.id)}
+          disabled={!allowSync}
+          aria-label={`Delete bookmark ${bookmark.title}`}
+        >
+          <FontAwesomeIcon icon={faTrash} />
+        </button>
+      )}
     </article>
   );
 };

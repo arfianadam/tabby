@@ -12,6 +12,7 @@ import { actionButtonClasses, inputClasses, panelClass } from "./constants";
 
 type CollectionsSidebarProps = {
   allowSync: boolean;
+  editMode: boolean;
   collections: Collection[];
   selectedCollectionId: string | null;
   newCollection: string;
@@ -26,6 +27,7 @@ type CollectionsSidebarProps = {
 
 const CollectionsSidebar = ({
   allowSync,
+  editMode,
   collections,
   selectedCollectionId,
   newCollection,
@@ -37,44 +39,48 @@ const CollectionsSidebar = ({
   noCollections,
   loading,
 }: CollectionsSidebarProps) => {
+  const canEdit = allowSync && editMode;
   const handleCollectionClick = (collectionId: string) =>
     onSelectCollection(collectionId);
 
   return (
     <aside className={`${panelClass} min-h-0`}>
-      <form className="space-y-2" onSubmit={onCreateCollection}>
-        <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-          <FontAwesomeIcon icon={faFolderPlus} className="text-slate-400" />
-          Create collection
-        </span>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Ex: Product research"
-            value={newCollection}
-            onChange={(event) => onNewCollectionChange(event.target.value)}
-            className={inputClasses}
-            disabled={!allowSync}
-          />
-          <button
-            type="submit"
-            disabled={!allowSync || creatingCollection}
-            className={actionButtonClasses}
-          >
-            <FontAwesomeIcon
-              icon={creatingCollection ? faSpinner : faPlus}
-              spin={creatingCollection}
-              className="mr-2"
+      {canEdit && (
+        <form className="space-y-2" onSubmit={onCreateCollection}>
+          <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <FontAwesomeIcon icon={faFolderPlus} className="text-slate-400" />
+            Create collection
+          </span>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Ex: Product research"
+              value={newCollection}
+              onChange={(event) => onNewCollectionChange(event.target.value)}
+              className={inputClasses}
+              disabled={!canEdit}
             />
-            {creatingCollection ? "Adding…" : "Add"}
-          </button>
-        </div>
-      </form>
+            <button
+              type="submit"
+              disabled={!canEdit || creatingCollection}
+              className={actionButtonClasses}
+            >
+              <FontAwesomeIcon
+                icon={creatingCollection ? faSpinner : faPlus}
+                spin={creatingCollection}
+                className="mr-2"
+              />
+              {creatingCollection ? "Adding…" : "Add"}
+            </button>
+          </div>
+        </form>
+      )}
       <div className="flex-1 space-y-2 overflow-y-auto pr-1">
         {noCollections && allowSync && !loading && (
           <p className="text-sm text-slate-500">
-            Start by creating a collection. Collections contain folders and
-            bookmarks.
+            {canEdit
+              ? "Start by creating a collection. Collections contain folders and bookmarks."
+              : "Enable edit mode to create your first collection."}
           </p>
         )}
         {collections.map((collection) => {
@@ -114,18 +120,20 @@ const CollectionsSidebar = ({
                   </p>
                 </div>
               </div>
-              <button
-                className="cursor-pointer rounded-full h-8 w-8 flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onDeleteCollection(collection);
-                }}
-                aria-label={`Delete ${collection.name}`}
-                disabled={!allowSync}
-              >
-                <FontAwesomeIcon icon={faTrash} />
-              </button>
+              {canEdit && (
+                <button
+                  className="cursor-pointer rounded-full h-8 w-8 flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onDeleteCollection(collection);
+                  }}
+                  aria-label={`Delete ${collection.name}`}
+                  disabled={!canEdit}
+                >
+                  <FontAwesomeIcon icon={faTrash} />
+                </button>
+              )}
             </div>
           );
         })}

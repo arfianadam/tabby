@@ -42,7 +42,9 @@ const FolderBookmarks = ({
         {bookmarks.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500 text-sm">
             <p>
-              This folder is empty. Drag bookmarks here or use “Add bookmark”.
+              {allowSync
+                ? "This folder is empty. Drag bookmarks here or use “Add bookmark”."
+                : "This folder is empty. Enable edit mode to add bookmarks."}
             </p>
           </div>
         ) : (

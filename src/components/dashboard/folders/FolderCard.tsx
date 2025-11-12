@@ -112,16 +112,18 @@ const FolderCard = ({
     >
       <div className="flex gap-2 items-center justify-between">
         <div className="flex flex-wrap items-center gap-2 text-slate-900 font-semibold">
-          <button
-            type="button"
-            ref={setActivatorNodeRef}
-            {...dragHandleProps}
-            className="h-8 w-8 rounded-full text-slate-400 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center cursor-grab"
-            aria-label={`Reorder folder ${folder.name}`}
-            disabled={!allowSync}
-          >
-            <FontAwesomeIcon icon={faGripVertical} />
-          </button>
+          {allowSync && (
+            <button
+              type="button"
+              ref={setActivatorNodeRef}
+              {...dragHandleProps}
+              className="h-8 w-8 rounded-full text-slate-400 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center cursor-grab"
+              aria-label={`Reorder folder ${folder.name}`}
+              disabled={!allowSync}
+            >
+              <FontAwesomeIcon icon={faGripVertical} />
+            </button>
+          )}
           <FontAwesomeIcon icon={faFolderOpen} className="text-indigo-500" />
           <span>{folder.name}</span>
           <span className="flex items-center gap-1 text-xs font-normal text-slate-500">
@@ -130,37 +132,39 @@ const FolderCard = ({
             {bookmarks.length === 1 ? "" : "s"}
           </span>
         </div>
-        <div className="flex items-center flex-wrap gap-2">
-          <button
-            type="button"
-            className={`${subtleButtonClasses} text-indigo-700 hover:text-indigo-800`}
-            onClick={() => onOpenBookmarkModal(folder.id)}
-            disabled={!allowSync}
-          >
-            <FontAwesomeIcon icon={faPlus} />
-          </button>
-          {!editingName && (
+        {allowSync && (
+          <div className="flex items-center flex-wrap gap-2">
             <button
               type="button"
-              className={`${subtleButtonClasses} text-slate-600 hover:text-slate-700`}
-              onClick={() => {
-                setNameDraft(folder.name);
-                setEditingName(true);
-              }}
+              className={`${subtleButtonClasses} text-indigo-700 hover:text-indigo-800`}
+              onClick={() => onOpenBookmarkModal(folder.id)}
               disabled={!allowSync}
             >
-              <FontAwesomeIcon icon={faPen} />
+              <FontAwesomeIcon icon={faPlus} />
             </button>
-          )}
-          <button
-            type="button"
-            className={`${subtleButtonClasses} text-rose-600 hover:text-rose-700`}
-            onClick={() => onDeleteFolder(folder)}
-            disabled={!allowSync}
-          >
-            <FontAwesomeIcon icon={faTrash} />
-          </button>
-        </div>
+            {!editingName && (
+              <button
+                type="button"
+                className={`${subtleButtonClasses} text-slate-600 hover:text-slate-700`}
+                onClick={() => {
+                  setNameDraft(folder.name);
+                  setEditingName(true);
+                }}
+                disabled={!allowSync}
+              >
+                <FontAwesomeIcon icon={faPen} />
+              </button>
+            )}
+            <button
+              type="button"
+              className={`${subtleButtonClasses} text-rose-600 hover:text-rose-700`}
+              onClick={() => onDeleteFolder(folder)}
+              disabled={!allowSync}
+            >
+              <FontAwesomeIcon icon={faTrash} />
+            </button>
+          </div>
+        )}
       </div>
       {editingName && (
         <form
