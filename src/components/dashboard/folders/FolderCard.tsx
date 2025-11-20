@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBookmark,
@@ -27,6 +27,7 @@ type FolderCardProps = {
   onRenameFolder: (folder: Folder, name: string) => Promise<boolean>;
   onDeleteBookmark: (folderId: string, bookmarkId: string) => void;
   faviconMap: Record<string, string | null>;
+  dragHandle?: ReactNode;
 };
 
 const FolderCard = ({
@@ -38,6 +39,7 @@ const FolderCard = ({
   onRenameFolder,
   onDeleteBookmark,
   faviconMap,
+  dragHandle,
 }: FolderCardProps) => {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(folder.name);
@@ -83,6 +85,7 @@ const FolderCard = ({
     <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 flex flex-col">
       <div className="flex gap-2 items-center justify-between">
         <div className="flex flex-wrap items-center gap-2 text-slate-900 font-semibold">
+          {dragHandle}
           <FontAwesomeIcon icon={faFolderOpen} className="text-indigo-500" />
           <span>{folder.name}</span>
           <span className="flex items-center gap-1 text-xs font-normal text-slate-500">

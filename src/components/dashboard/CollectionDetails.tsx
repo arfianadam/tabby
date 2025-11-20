@@ -1,4 +1,17 @@
 import { useMemo } from "react";
+import {
+  DndContext,
+  type DragEndEvent,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faFolder,
@@ -18,7 +31,7 @@ import {
   subtleButtonClasses,
 } from "./constants";
 import AddBookmarkModal from "./AddBookmarkModal";
-import FolderCard from "./folders/FolderCard";
+import SortableFolderCard from "./folders/SortableFolderCard";
 
 type CollectionDetailsProps = {
   collection: Collection;
@@ -76,9 +89,15 @@ const CollectionDetails = (props: CollectionDetailsProps) => {
     savingBookmark,
     hasChromeTabsSupport,
     onDeleteBookmark,
+    onReorderFolders,
   } = props;
 
   const editingEnabled = allowSync && editMode;
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+  );
   const activeBookmarkFolder =
     collection.folders.find((folder) => folder.id === bookmarkModalFolderId) ??
     null;
@@ -87,7 +106,26 @@ const CollectionDetails = (props: CollectionDetailsProps) => {
     [collection.folders],
   );
   const faviconMap = useBookmarkFavicons(allBookmarks);
-  const { foldersToRender } = useFolderOrdering(collection.folders);
+  const { foldersToRender, folderOrder, setFolderOrder } = useFolderOrdering(
+    collection.folders,
+  );
+
+  const handleFolderDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!editingEnabled || !over) {
+      return;
+    }
+    if (active.id === over.id) {
+      return;
+    }
+    const oldIndex = folderOrder.indexOf(String(active.id));
+    const newIndex = folderOrder.indexOf(String(over.id));
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
+    const reordered = arrayMove(folderOrder, oldIndex, newIndex);
+    setFolderOrder(reordered);
+    onReorderFolders(reordered);
+  };
 
   return (
     <section className={`${panelClass} min-h-0`}>
@@ -150,21 +188,33 @@ const CollectionDetails = (props: CollectionDetailsProps) => {
               </p>
             </div>
           ) : (
-            <div className="grow overflow-y-auto pr-2 flex flex-col gap-4">
-              {foldersToRender.map((folder) => (
-                <FolderCard
-                  key={folder.id}
-                  folder={folder}
-                  bookmarks={folder.bookmarks}
-                  allowSync={editingEnabled}
-                  onOpenBookmarkModal={onOpenBookmarkModal}
-                  onDeleteFolder={onDeleteFolder}
-                  onRenameFolder={onRenameFolder}
-                  onDeleteBookmark={onDeleteBookmark}
-                  faviconMap={faviconMap}
-                />
-              ))}
-            </div>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleFolderDragEnd}
+            >
+              <SortableContext
+                items={folderOrder}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="grow overflow-y-auto flex flex-col gap-4 overflow-hidden">
+                  {foldersToRender.map((folder) => (
+                    <SortableFolderCard
+                      key={folder.id}
+                      folder={folder}
+                      bookmarks={folder.bookmarks}
+                      allowSync={editingEnabled}
+                      editingEnabled={editingEnabled}
+                      onOpenBookmarkModal={onOpenBookmarkModal}
+                      onDeleteFolder={onDeleteFolder}
+                      onRenameFolder={onRenameFolder}
+                      onDeleteBookmark={onDeleteBookmark}
+                      faviconMap={faviconMap}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           )}
         </div>
       </div>
