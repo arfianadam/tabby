@@ -4,11 +4,16 @@ import type { Collection } from "../../types";
 export const useSelectedCollection = (collections: Collection[]) => {
   const [selectedCollectionId, setSelectedCollectionId] = useState<
     string | null
-  >(null);
+  >(() => localStorage.getItem("tabby-last-collection-id"));
+
+  useEffect(() => {
+    if (selectedCollectionId) {
+      localStorage.setItem("tabby-last-collection-id", selectedCollectionId);
+    }
+  }, [selectedCollectionId]);
 
   useEffect(() => {
     if (!collections.length) {
-      setSelectedCollectionId(null);
       return;
     }
     setSelectedCollectionId((prev) => {

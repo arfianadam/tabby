@@ -9,7 +9,6 @@ import { useCollectionActions } from "../hooks/dashboard/useCollectionActions";
 import type { BookmarkDraft, Collection, Folder } from "../types";
 import CollectionDetails from "./dashboard/CollectionDetails";
 import CollectionsSidebar from "./dashboard/CollectionsSidebar";
-import DashboardHeader from "./dashboard/DashboardHeader";
 import DashboardToasts from "./dashboard/DashboardToasts";
 import { panelClass } from "./dashboard/constants";
 import type { DashboardUser } from "./dashboard/types";
@@ -263,14 +262,7 @@ const Dashboard = ({
 
   return (
     <div className="h-full flex flex-col gap-2 p-3 overflow-hidden">
-      <DashboardHeader
-        allowSync={allowSync}
-        user={user}
-        editMode={editMode}
-        onToggleEditMode={() => setEditMode((prev) => !prev)}
-        onSignOut={handleSignOut}
-      />
-      <div className="grow grid gap-2 grid-cols-[260px_1fr] min-h-0 items-stretch">
+      <div className="grow grid gap-2 grid-cols-[auto_1fr] min-h-0 items-stretch">
         <CollectionsSidebar
           allowSync={allowSync}
           editMode={editMode}
@@ -284,6 +276,9 @@ const Dashboard = ({
           onDeleteCollection={handleDeleteCollection}
           noCollections={noCollections}
           loading={loading}
+          user={user}
+          onSignOut={handleSignOut}
+          onToggleEditMode={() => setEditMode((prev) => !prev)}
         />
         {selectedCollection ? (
           <CollectionDetails

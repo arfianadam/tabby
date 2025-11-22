@@ -6,9 +6,26 @@ import {
   faPlus,
   faSpinner,
   faTrash,
+  faChevronLeft,
+  faChevronRight,
+  faCloudArrowUp,
+  faCloudArrowDown,
+  faCircleUser,
+  faPenToSquare,
+  faMoon,
+  faSun,
+  faArrowRightFromBracket,
 } from "@fortawesome/free-solid-svg-icons";
+import { useState, useEffect } from "react";
 import type { Collection } from "../../types";
-import { actionButtonClasses, inputClasses, panelClass } from "./constants";
+import type { DashboardUser } from "./types";
+import {
+  actionButtonClasses,
+  inputClasses,
+  panelClass,
+  subtleButtonClasses,
+} from "./constants";
+import { useDarkMode } from "../../hooks/useDarkMode";
 
 type CollectionsSidebarProps = {
   allowSync: boolean;
@@ -23,6 +40,9 @@ type CollectionsSidebarProps = {
   onDeleteCollection: (collection: Collection) => void;
   noCollections: boolean;
   loading: boolean;
+  user: DashboardUser;
+  onSignOut: () => void;
+  onToggleEditMode: () => void;
 };
 
 const CollectionsSidebar = ({
@@ -38,15 +58,67 @@ const CollectionsSidebar = ({
   onDeleteCollection,
   noCollections,
   loading,
+  user,
+  onSignOut,
+  onToggleEditMode,
 }: CollectionsSidebarProps) => {
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const saved = localStorage.getItem("tabby-sidebar-collapsed");
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(
+      "tabby-sidebar-collapsed",
+      JSON.stringify(isCollapsed),
+    );
+  }, [isCollapsed]);
+  const { isDark, toggleDarkMode } = useDarkMode();
   const canEdit = allowSync && editMode;
   const handleCollectionClick = (collectionId: string) =>
     onSelectCollection(collectionId);
 
+  const syncDetails = allowSync
+    ? { icon: faCloudArrowUp, text: "Synced", tone: "text-emerald-600" }
+    : { icon: faCloudArrowDown, text: "Restoring…", tone: "text-amber-600" };
+
+  // Consistent button sizing when collapsed: fills the container width (constrained by padding) and maintains square aspect ratio
+  const collapsedButtonClass =
+    "w-full aspect-square flex items-center justify-center p-0";
+
   return (
-    <aside className={`${panelClass} min-h-0`}>
-      {canEdit && (
-        <form className="space-y-2" onSubmit={onCreateCollection}>
+    <aside
+      className={`${panelClass} min-h-0 transition-all duration-300 ease-in-out flex flex-col ${
+        isCollapsed ? "w-16" : "w-80"
+      }`}
+    >
+      {/* Header Section */}
+      <div
+        className={`flex items-center mb-4 ${isCollapsed ? "justify-center" : "justify-between"}`}
+      >
+        {!isCollapsed && (
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+              Tabby
+            </h1>
+          </div>
+        )}
+        <button
+          className={`rounded-lg cursor-pointer hover:bg-slate-100 text-slate-500 dark:hover:bg-slate-700 dark:text-slate-400 ${
+            isCollapsed ? collapsedButtonClass : "size-9"
+          }`}
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <FontAwesomeIcon
+            icon={isCollapsed ? faChevronRight : faChevronLeft}
+          />
+        </button>
+      </div>
+
+      {/* Create Collection (only visible when expanded) */}
+      {canEdit && !isCollapsed && (
+        <form className="space-y-2 mb-4" onSubmit={onCreateCollection}>
           <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
             <FontAwesomeIcon icon={faFolderPlus} className="text-slate-400" />
             Create collection
@@ -54,7 +126,7 @@ const CollectionsSidebar = ({
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="Ex: Product research"
+              placeholder="New collection"
               value={newCollection}
               onChange={(event) => onNewCollectionChange(event.target.value)}
               className={inputClasses}
@@ -68,19 +140,19 @@ const CollectionsSidebar = ({
               <FontAwesomeIcon
                 icon={creatingCollection ? faSpinner : faPlus}
                 spin={creatingCollection}
-                className="mr-2"
               />
-              {creatingCollection ? "Adding…" : "Add"}
             </button>
           </div>
         </form>
       )}
-      <div className="flex-1 space-y-2 overflow-y-auto pr-1">
-        {noCollections && allowSync && !loading && (
+
+      {/* Collections List */}
+      <div className="flex-1 space-y-2 overflow-y-auto scrollbar-thin">
+        {noCollections && allowSync && !loading && !isCollapsed && (
           <p className="text-sm text-slate-500">
             {canEdit
-              ? "Start by creating a collection. Collections contain folders and bookmarks."
-              : "Enable edit mode to create your first collection."}
+              ? "Create a collection to start."
+              : "Enable edit mode to create."}
           </p>
         )}
         {collections.map((collection) => {
@@ -90,39 +162,44 @@ const CollectionsSidebar = ({
               key={collection.id}
               role="button"
               tabIndex={0}
-              className={`flex items-center cursor-pointer justify-between rounded-2xl border px-3 py-3 text-sm transition hover:border-indigo-300 hover:text-indigo-900 dark:hover:border-indigo-500 dark:hover:text-indigo-100 ${
+              className={`flex items-center cursor-pointer rounded-xl border text-sm transition hover:border-indigo-300 hover:text-indigo-900 dark:hover:border-indigo-500 dark:hover:text-indigo-100 ${
                 isActive
                   ? "border-indigo-300 bg-indigo-50 text-indigo-900 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-100"
-                  : "border-slate-200 bg-white text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-              }`}
+                  : "border-transparent bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+              } ${isCollapsed ? collapsedButtonClass : "justify-between px-3 py-2"}`}
               onClick={() => handleCollectionClick(collection.id)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   handleCollectionClick(collection.id);
                 }
               }}
+              title={isCollapsed ? collection.name : undefined}
             >
-              <div className="flex items-center gap-3">
+              <div
+                className={`flex items-center ${isCollapsed ? "gap-0" : "gap-3"}`}
+              >
                 <span
-                  className={`rounded-full p-2 text-sm ${
+                  className={`flex items-center justify-center rounded-lg p-2 text-lg transition-colors ${
                     isActive
-                      ? "bg-white/80 text-indigo-600 dark:bg-slate-900/50 dark:text-indigo-400"
-                      : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
+                      ? "text-indigo-600 dark:text-indigo-400"
+                      : "text-slate-400 dark:text-slate-500"
                   }`}
                 >
                   <FontAwesomeIcon icon={isActive ? faFolderOpen : faFolder} />
                 </span>
-                <div>
-                  <p className="font-medium">{collection.name}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {collection.folders.length} folder
-                    {collection.folders.length === 1 ? "" : "s"}
-                  </p>
-                </div>
+                {!isCollapsed && (
+                  <div className="overflow-hidden">
+                    <p className="font-medium truncate">{collection.name}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
+                      {collection.folders.length} folder
+                      {collection.folders.length === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                )}
               </div>
-              {canEdit && (
+              {canEdit && !isCollapsed && (
                 <button
-                  className="cursor-pointer rounded-full h-8 w-8 flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                  className="cursor-pointer rounded-full h-7 w-7 flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
@@ -131,12 +208,86 @@ const CollectionsSidebar = ({
                   aria-label={`Delete ${collection.name}`}
                   disabled={!canEdit}
                 >
-                  <FontAwesomeIcon icon={faTrash} />
+                  <FontAwesomeIcon icon={faTrash} className="text-xs" />
                 </button>
               )}
             </div>
           );
         })}
+      </div>
+
+      {/* Bottom Section: User & Controls */}
+      <div
+        className={`mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 flex flex-col gap-3`}
+      >
+        {/* User Info */}
+        <div
+          className={`flex items-center gap-3 ${isCollapsed ? "justify-center" : ""}`}
+        >
+          <div
+            className={`flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 ${isCollapsed ? collapsedButtonClass : "p-2"}`}
+          >
+            <FontAwesomeIcon
+              icon={faCircleUser}
+              className="text-lg text-slate-400 dark:text-slate-500"
+            />
+          </div>
+          {!isCollapsed && (
+            <div className="overflow-hidden">
+              <p className="text-sm font-medium text-slate-900 dark:text-slate-200 truncate">
+                {user.email ?? "Signed in"}
+              </p>
+              <p
+                className={`flex items-center gap-1 text-xs ${syncDetails.tone}`}
+              >
+                <FontAwesomeIcon icon={syncDetails.icon} />
+                {syncDetails.text}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Controls */}
+        <div className={`flex ${isCollapsed ? "flex-col gap-2" : "gap-2"}`}>
+          {/* Edit Mode Toggle */}
+          <button
+            className={`${subtleButtonClasses} ${
+              isCollapsed ? collapsedButtonClass : "flex-1 gap-2"
+            } ${
+              editMode
+                ? "border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-900 dark:bg-indigo-900/30 dark:text-indigo-300"
+                : "border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+            } ${!allowSync ? "cursor-not-allowed opacity-60" : ""}`}
+            onClick={onToggleEditMode}
+            type="button"
+            title="Toggle Edit Mode"
+            disabled={!allowSync}
+          >
+            <FontAwesomeIcon icon={faPenToSquare} />
+            {!isCollapsed && <span>{editMode ? "Done" : "Edit"}</span>}
+          </button>
+
+          {/* Dark Mode Toggle */}
+          <button
+            className={`${subtleButtonClasses} ${isCollapsed ? collapsedButtonClass : "px-3"}`}
+            onClick={toggleDarkMode}
+            type="button"
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            <FontAwesomeIcon icon={isDark ? faMoon : faSun} />
+          </button>
+        </div>
+
+        {/* Sign Out */}
+        <button
+          className={`${subtleButtonClasses} text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 ${isCollapsed ? collapsedButtonClass : "w-full gap-2"}`}
+          onClick={onSignOut}
+          type="button"
+          title="Sign out"
+        >
+          <FontAwesomeIcon icon={faArrowRightFromBracket} />
+          {!isCollapsed && "Sign out"}
+        </button>
       </div>
     </aside>
   );

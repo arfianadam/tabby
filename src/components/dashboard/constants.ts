@@ -1,5 +1,5 @@
 export const panelClass =
-  "rounded-xl border border-slate-200 bg-white p-4 flex flex-col gap-4 dark:bg-slate-800 dark:border-slate-700";
+  "rounded-xl border border-slate-200 bg-white p-2 flex flex-col gap-4 dark:bg-slate-800 dark:border-slate-700";
 
 export const inputClasses =
   "w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:bg-slate-900/50 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-800 dark:focus:border-indigo-500";
