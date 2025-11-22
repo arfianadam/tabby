@@ -16,6 +16,9 @@ export const toastToneClasses = {
   danger: "bg-rose-600/95 text-white dark:bg-rose-500/95",
 } as const;
 
+export const dangerGhostButtonClasses =
+  "flex items-center justify-center rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 dark:text-slate-500 dark:hover:bg-rose-900/30 dark:hover:text-rose-400";
+
 export const TOAST_ANIMATION_DURATION_MS = 200;
 
 export type ToastTone = keyof typeof toastToneClasses;

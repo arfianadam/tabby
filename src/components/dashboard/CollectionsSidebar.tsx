@@ -21,6 +21,7 @@ import type { Collection } from "../../types";
 import type { DashboardUser } from "./types";
 import {
   actionButtonClasses,
+  dangerGhostButtonClasses,
   inputClasses,
   panelClass,
   subtleButtonClasses,
@@ -94,12 +95,12 @@ const CollectionsSidebar = ({
 
   // Consistent button sizing when collapsed: fills the container width (constrained by padding) and maintains square aspect ratio
   const collapsedButtonClass =
-    "w-full aspect-square flex items-center justify-center p-0";
+    "size-12 mx-auto flex items-center justify-center p-0";
 
   return (
     <aside
-      className={`${panelClass} min-h-0 transition-[width] duration-300 ease-in-out flex flex-col ${
-        isCollapsed ? "w-16" : "w-80"
+      className={`${panelClass} box-content min-h-0 transition-[width] duration-300 ease-in-out flex flex-col overflow-hidden ${
+        isCollapsed ? "w-12 items-start" : "w-80"
       }`}
     >
       {/* Header Section */}
@@ -107,7 +108,7 @@ const CollectionsSidebar = ({
         className={`flex items-center mb-4 ${isCollapsed ? "justify-center" : "justify-between"}`}
       >
         {!isCollapsed && (
-          <div>
+          <div className="overflow-hidden whitespace-nowrap">
             <h1 className="text-xl font-bold text-slate-900 dark:text-white">
               Tabby
             </h1>
@@ -129,7 +130,7 @@ const CollectionsSidebar = ({
       {/* Create Collection (only visible when expanded) */}
       {canEdit && !isCollapsed && (
         <form className="space-y-2 mb-4" onSubmit={onCreateCollection}>
-          <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap overflow-hidden">
             <FontAwesomeIcon icon={faFolderPlus} className="text-slate-400" />
             Create collection
           </span>
@@ -157,9 +158,9 @@ const CollectionsSidebar = ({
       )}
 
       {/* Collections List */}
-      <div className="flex-1 space-y-2 overflow-y-auto scrollbar-thin">
+      <div className="flex-1 space-y-2 overflow-y-auto overflow-x-hidden scrollbar-thin">
         {noCollections && allowSync && !loading && !isCollapsed && (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 whitespace-nowrap overflow-hidden">
             {canEdit
               ? "Create a collection to start."
               : "Enable edit mode to create."}
@@ -186,7 +187,7 @@ const CollectionsSidebar = ({
               title={isCollapsed ? collection.name : undefined}
             >
               <div
-                className={`flex items-center ${isCollapsed ? "gap-0" : "gap-3"}`}
+                className={`flex items-center min-w-0 flex-1 ${isCollapsed ? "gap-0 justify-center" : "gap-3"}`}
               >
                 <span
                   className={`flex items-center justify-center rounded-lg p-2 text-lg transition-colors ${
@@ -198,9 +199,9 @@ const CollectionsSidebar = ({
                   <FontAwesomeIcon icon={isActive ? faFolderOpen : faFolder} />
                 </span>
                 {!isCollapsed && (
-                  <div className="overflow-hidden">
+                  <div className="overflow-hidden flex-1">
                     <p className="font-medium truncate">{collection.name}</p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500">
+                    <p className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
                       {collection.folders.length} folder
                       {collection.folders.length === 1 ? "" : "s"}
                     </p>
@@ -209,7 +210,7 @@ const CollectionsSidebar = ({
               </div>
               {canEdit && !isCollapsed && (
                 <button
-                  className="cursor-pointer rounded-full h-7 w-7 flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                  className={`h-7 w-7 shrink-0 ml-2 ${dangerGhostButtonClasses}`}
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
@@ -248,7 +249,7 @@ const CollectionsSidebar = ({
                 {user.email ?? "Signed in"}
               </p>
               <p
-                className={`flex items-center gap-1 text-xs ${syncDetails.tone}`}
+                className={`flex items-center gap-1 text-xs ${syncDetails.tone} whitespace-nowrap`}
               >
                 <FontAwesomeIcon icon={syncDetails.icon} />
                 {syncDetails.text}
@@ -274,7 +275,11 @@ const CollectionsSidebar = ({
             disabled={!allowSync}
           >
             <FontAwesomeIcon icon={faPenToSquare} />
-            {!isCollapsed && <span>{editMode ? "Done" : "Edit"}</span>}
+            {!isCollapsed && (
+              <span className="whitespace-nowrap">
+                {editMode ? "Done" : "Edit"}
+              </span>
+            )}
           </button>
 
           {/* Dark Mode Toggle */}
@@ -296,7 +301,7 @@ const CollectionsSidebar = ({
           title="Sign out"
         >
           <FontAwesomeIcon icon={faArrowRightFromBracket} />
-          {!isCollapsed && "Sign out"}
+          {!isCollapsed && <span className="whitespace-nowrap">Sign out</span>}
         </button>
       </div>
     </aside>

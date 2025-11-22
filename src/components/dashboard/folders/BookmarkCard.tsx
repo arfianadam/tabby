@@ -1,6 +1,7 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import type { Bookmark } from "../../../types";
+import { dangerGhostButtonClasses } from "../constants";
 
 type BookmarkCardProps = {
   folderId: string;
@@ -64,7 +65,7 @@ const BookmarkCard = ({
       {dragHandle}
       {allowSync && (
         <button
-          className="absolute right-3 top-4 z-10 rounded-full text-slate-400 hover:bg-rose-50 cursor-pointer hover:text-rose-600 h-6 w-6 flex items-center justify-center dark:text-slate-500 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
+          className={`absolute right-3 top-4 z-10 h-6 w-6 ${dangerGhostButtonClasses}`}
           type="button"
           onClick={() => onDeleteBookmark(folderId, bookmark.id)}
           disabled={!allowSync}
