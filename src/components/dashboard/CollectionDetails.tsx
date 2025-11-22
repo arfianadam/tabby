@@ -4,14 +4,12 @@ import {
   type DragEndEvent,
   PointerSensor,
   closestCenter,
+  pointerWithin,
+  rectIntersection,
   useSensor,
   useSensors,
+  type CollisionDetection,
 } from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faFolder,
@@ -32,6 +30,79 @@ import {
 } from "./constants";
 import AddBookmarkModal from "./AddBookmarkModal";
 import SortableFolderCard from "./folders/SortableFolderCard";
+
+const collisionDetectionStrategy: CollisionDetection = (args) => {
+  const { active, droppableContainers } = args;
+
+  // 1. For folders, stick to closestCenter among folders
+  if (active.data.current?.type === "folder") {
+    return closestCenter({
+      ...args,
+      droppableContainers: droppableContainers.filter(
+        (c) => c.data.current?.type === "folder",
+      ),
+    });
+  }
+
+  // 2. For bookmarks
+  if (active.data.current?.type === "bookmark") {
+    // Priority 1: Exact pointer match on any bookmark
+    const pointerCollisions = pointerWithin({
+      ...args,
+      droppableContainers: droppableContainers.filter(
+        (c) => c.data.current?.type === "bookmark",
+      ),
+    });
+
+    if (pointerCollisions.length > 0) {
+      return pointerCollisions;
+    }
+
+    // Priority 2: Check if we are over a folder
+    const folderCollisions = rectIntersection({
+      ...args,
+      droppableContainers: droppableContainers.filter(
+        (c) => c.data.current?.type === "folder",
+      ),
+    });
+
+    if (folderCollisions.length > 0) {
+      const topFolder = folderCollisions[0];
+      const folderId = topFolder.data?.current?.folder?.id;
+
+      if (folderId) {
+        const folderBookmarks = droppableContainers.filter(
+          (c) =>
+            c.data.current?.type === "bookmark" &&
+            c.data.current?.folderId === folderId,
+        );
+
+        // Priority 3: Magnetic pull to nearest bookmark in this folder
+        const magneticBookmarkCollisions = closestCenter({
+          ...args,
+          droppableContainers: folderBookmarks,
+        });
+
+        if (magneticBookmarkCollisions.length > 0) {
+          return magneticBookmarkCollisions;
+        }
+      }
+
+      // Priority 4: Empty folder (or far from any bookmark in it)
+      return folderCollisions;
+    }
+
+    // 3. Fallback: Not over any folder, check closest bookmarks globally
+    return closestCenter({
+      ...args,
+      droppableContainers: droppableContainers.filter(
+        (c) => c.data.current?.type === "bookmark",
+      ),
+    });
+  }
+
+  return [];
+};
 
 type CollectionDetailsProps = {
   collection: Collection;
@@ -90,6 +161,8 @@ const CollectionDetails = (props: CollectionDetailsProps) => {
     hasChromeTabsSupport,
     onDeleteBookmark,
     onReorderFolders,
+    onReorderBookmarks,
+    onMoveBookmark,
   } = props;
 
   const editingEnabled = allowSync && editMode;
@@ -106,25 +179,75 @@ const CollectionDetails = (props: CollectionDetailsProps) => {
     [collection.folders],
   );
   const faviconMap = useBookmarkFavicons(allBookmarks);
-  const { foldersToRender, folderOrder, setFolderOrder } = useFolderOrdering(
-    collection.folders,
-  );
+  const {
+    foldersToRender,
+    folderOrder,
+    setFolderOrder,
+    moveBookmark,
+  } = useFolderOrdering(collection.folders);
 
-  const handleFolderDragEnd = ({ active, over }: DragEndEvent) => {
-    if (!editingEnabled || !over) {
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!editingEnabled || !over || active.id === over.id) {
       return;
     }
-    if (active.id === over.id) {
-      return;
+
+    const type = active.data.current?.type;
+
+    if (type === "folder") {
+      const oldIndex = folderOrder.indexOf(String(active.id));
+      const newIndex = folderOrder.indexOf(String(over.id));
+      if (oldIndex === -1 || newIndex === -1) {
+        return;
+      }
+      const reordered = [...folderOrder];
+      const [moved] = reordered.splice(oldIndex, 1);
+      reordered.splice(newIndex, 0, moved);
+
+      setFolderOrder(reordered);
+      onReorderFolders(reordered);
+    } else if (type === "bookmark") {
+      const bookmarkId = String(active.id);
+      const sourceFolderId = active.data.current?.folderId;
+      let targetFolderId: string | undefined;
+      let targetIndex = 0;
+
+      if (over.data.current?.type === "folder") {
+        targetFolderId = over.data.current.folder.id;
+        const folder = foldersToRender.find((f) => f.id === targetFolderId);
+        if (folder) {
+          targetIndex = folder.bookmarks.length;
+        }
+      } else if (over.data.current?.type === "bookmark") {
+        targetFolderId = over.data.current.folderId;
+        targetIndex = over.data.current.index;
+      }
+
+      if (!sourceFolderId || !targetFolderId) {
+        return;
+      }
+
+      // Move locally
+      moveBookmark(bookmarkId, sourceFolderId, targetFolderId, targetIndex);
+
+      // Sync remotely
+      if (sourceFolderId === targetFolderId) {
+        const folder = foldersToRender.find((f) => f.id === sourceFolderId);
+        if (folder) {
+          const list = folder.bookmarks.map((b) => b.id);
+          const oldIdx = list.indexOf(bookmarkId);
+          if (oldIdx > -1) {
+            list.splice(oldIdx, 1);
+            let insertionIndex = targetIndex;
+            insertionIndex = Math.max(0, Math.min(insertionIndex, list.length));
+            list.splice(insertionIndex, 0, bookmarkId);
+            onReorderBookmarks(sourceFolderId, list);
+          }
+        }
+      } else {
+        onMoveBookmark(bookmarkId, sourceFolderId, targetFolderId, targetIndex);
+      }
     }
-    const oldIndex = folderOrder.indexOf(String(active.id));
-    const newIndex = folderOrder.indexOf(String(over.id));
-    if (oldIndex === -1 || newIndex === -1) {
-      return;
-    }
-    const reordered = arrayMove(folderOrder, oldIndex, newIndex);
-    setFolderOrder(reordered);
-    onReorderFolders(reordered);
   };
 
   return (
@@ -190,30 +313,26 @@ const CollectionDetails = (props: CollectionDetailsProps) => {
           ) : (
             <DndContext
               sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleFolderDragEnd}
+              collisionDetection={collisionDetectionStrategy}
+              onDragEnd={handleDragEnd}
             >
-              <SortableContext
-                items={folderOrder}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="grow overflow-y-auto flex flex-col gap-4 overflow-hidden">
-                  {foldersToRender.map((folder) => (
-                    <SortableFolderCard
-                      key={folder.id}
-                      folder={folder}
-                      bookmarks={folder.bookmarks}
-                      allowSync={editingEnabled}
-                      editingEnabled={editingEnabled}
-                      onOpenBookmarkModal={onOpenBookmarkModal}
-                      onDeleteFolder={onDeleteFolder}
-                      onRenameFolder={onRenameFolder}
-                      onDeleteBookmark={onDeleteBookmark}
-                      faviconMap={faviconMap}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
+              <div className="grow overflow-y-auto flex flex-col gap-4 p-2">
+                {foldersToRender.map((folder, index) => (
+                  <SortableFolderCard
+                    key={folder.id}
+                    folder={folder}
+                    index={index}
+                    bookmarks={folder.bookmarks}
+                    allowSync={editingEnabled}
+                    editingEnabled={editingEnabled}
+                    onOpenBookmarkModal={onOpenBookmarkModal}
+                    onDeleteFolder={onDeleteFolder}
+                    onRenameFolder={onRenameFolder}
+                    onDeleteBookmark={onDeleteBookmark}
+                    faviconMap={faviconMap}
+                  />
+                ))}
+              </div>
             </DndContext>
           )}
         </div>

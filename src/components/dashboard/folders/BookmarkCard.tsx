@@ -8,6 +8,7 @@ type BookmarkCardProps = {
   allowSync: boolean;
   faviconSrc: string | null;
   onDeleteBookmark: (folderId: string, bookmarkId: string) => void;
+  dragHandle?: React.ReactNode;
 };
 
 const BookmarkCard = ({
@@ -16,6 +17,7 @@ const BookmarkCard = ({
   allowSync,
   faviconSrc,
   onDeleteBookmark,
+  dragHandle,
 }: BookmarkCardProps) => {
   const fallbackInitial = (() => {
     const source =
@@ -24,13 +26,13 @@ const BookmarkCard = ({
   })();
 
   return (
-    <article className="relative group rounded-2xl border border-slate-200 bg-white transition-colors hover:border-indigo-200 focus-within:border-indigo-200 max-w-90 shrink-0">
+    <article className="relative group rounded-2xl border border-slate-200 bg-white transition-colors hover:border-indigo-200 focus-within:border-indigo-200 max-w-90 shrink-0 h-full">
       <a
         href={bookmark.url}
         target="_self"
         className={`block h-full rounded-2xl p-4 ${
-          allowSync ? "pr-12" : "pr-4.5"
-        } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white`}
+          allowSync ? "pr-12 pl-12" : "pr-4.5"
+        } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-indigo-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white`}
       >
         <div className="flex flex-col gap-2">
           <div className="flex items-start gap-2">
@@ -57,6 +59,7 @@ const BookmarkCard = ({
           )}
         </div>
       </a>
+      {dragHandle}
       {allowSync && (
         <button
           className="absolute right-3 top-4 z-10 rounded-full text-slate-400 hover:bg-rose-50 cursor-pointer hover:text-rose-600 h-6 w-6 flex items-center justify-center"
