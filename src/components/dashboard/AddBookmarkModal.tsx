@@ -161,7 +161,7 @@ const AddBookmarkModal = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-slate-900/60"
+        className="absolute inset-0 bg-slate-900/60 dark:bg-slate-950/80"
         aria-hidden="true"
         onClick={onClose}
       />
@@ -169,20 +169,23 @@ const AddBookmarkModal = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="flex flex-col relative z-10 w-full max-w-6xl h-125 rounded-2xl bg-white shadow-2xl"
+        className="flex flex-col relative z-10 w-full max-w-6xl h-125 rounded-2xl bg-white shadow-2xl dark:bg-slate-800"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
               Add bookmark
             </p>
-            <h3 id={titleId} className="text-lg font-semibold text-slate-900">
+            <h3
+              id={titleId}
+              className="text-lg font-semibold text-slate-900 dark:text-white"
+            >
               {folder.name}
             </h3>
           </div>
           <button
             type="button"
-            className=" cursor-pointer rounded-full h-6 w-6 flex items-center justify-center text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            className=" cursor-pointer rounded-full h-6 w-6 flex items-center justify-center text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
             onClick={onClose}
             aria-label="Close add bookmark modal"
           >
@@ -195,7 +198,7 @@ const AddBookmarkModal = ({
         >
           <div className="grow min-h-0 flex gap-5">
             <div className="flex-1 space-y-3">
-              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 dark:text-slate-300">
                 Title
                 <input
                   type="text"
@@ -208,7 +211,7 @@ const AddBookmarkModal = ({
                   disabled={!allowSync}
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 dark:text-slate-300">
                 URL
                 <input
                   type="url"
@@ -221,7 +224,7 @@ const AddBookmarkModal = ({
                   disabled={!allowSync}
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 dark:text-slate-300">
                 Note (optional)
                 <textarea
                   value={bookmarkForm.note}
@@ -246,15 +249,15 @@ const AddBookmarkModal = ({
                 </button>
               </div>
             </div>
-            <div className="w-160 space-y-2 border-slate-100 border-l pl-4 flex flex-col">
+            <div className="w-160 space-y-2 border-slate-100 border-l pl-4 flex flex-col dark:border-slate-700">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <p className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
                   <FontAwesomeIcon icon={faListUl} />
                   Select from tabs in this window
                 </p>
-                <div className="flex items-center gap-3 text-xs text-slate-500">
+                <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                   {selectedTabCount > 0 && (
-                    <span className="font-semibold text-slate-600">
+                    <span className="font-semibold text-slate-600 dark:text-slate-300">
                       {selectedTabCount}{" "}
                       {selectedTabCount === 1 ? "tab" : "tabs"} selected
                     </span>
@@ -276,23 +279,25 @@ const AddBookmarkModal = ({
                 </div>
               </div>
               {!hasChromeTabsSupport ? (
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Load the built extension to list and capture tabs from the
                   current window.
                 </p>
               ) : tabsLoading ? (
-                <p className="flex items-center gap-2 text-sm text-slate-500">
+                <p className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                   <FontAwesomeIcon icon={faSpinner} spin />
                   Loading tabs…
                 </p>
               ) : tabError ? (
-                <p className="text-xs text-rose-600">{tabError}</p>
+                <p className="text-xs text-rose-600 dark:text-rose-400">
+                  {tabError}
+                </p>
               ) : tabs.length === 0 ? (
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   No tabs detected in this window.
                 </p>
               ) : (
-                <ul className="grow min-h-0 overflow-y-auto rounded-2xl border border-slate-200 bg-white text-left">
+                <ul className="grow min-h-0 overflow-y-auto rounded-2xl border border-slate-200 bg-white text-left dark:bg-slate-800 dark:border-slate-700">
                   {orderedTabs.map((tab) => {
                     const isActive = tab.id === activeTabId;
                     const isBatchSelected = selectedTabIds.includes(tab.id);
@@ -309,19 +314,21 @@ const AddBookmarkModal = ({
                     return (
                       <li
                         key={tab.id}
-                        className="border-b border-slate-100 last:border-b-0"
+                        className="border-b border-slate-100 last:border-b-0 dark:border-slate-700"
                       >
                         <div
                           className={`flex w-full items-start gap-3 p-3 text-left transition ${
-                            isActive ? "bg-indigo-50/80" : "hover:bg-slate-50"
+                            isActive
+                              ? "bg-indigo-50/80 dark:bg-indigo-900/50"
+                              : "hover:bg-slate-50 dark:hover:bg-slate-700/50"
                           }`}
                         >
                           <button
                             type="button"
                             className={`shrink-0 flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold transition ${
                               isBatchSelected
-                                ? "border-indigo-600 bg-indigo-600 text-white"
-                                : "border-slate-300 text-slate-400 hover:border-indigo-300"
+                                ? "border-indigo-600 bg-indigo-600 text-white dark:border-indigo-500 dark:bg-indigo-500"
+                                : "border-slate-300 text-slate-400 hover:border-indigo-300 dark:border-slate-600 dark:text-slate-500 dark:hover:border-indigo-500"
                             }`}
                             aria-pressed={isBatchSelected}
                             aria-label={toggleLabel}
@@ -338,7 +345,7 @@ const AddBookmarkModal = ({
                             className="flex-1 min-w-0 flex w-full items-start gap-3 text-left"
                             onClick={() => handleSelectTab(tab)}
                           >
-                            <span className="h-6 w-6 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                            <span className="h-6 w-6 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300">
                               {faviconSrc ? (
                                 <img
                                   src={faviconSrc}
@@ -353,10 +360,10 @@ const AddBookmarkModal = ({
                               )}
                             </span>
                             <span className="flex min-w-0 flex-col">
-                              <span className="text-sm font-medium text-slate-900 truncate">
+                              <span className="text-sm font-medium text-slate-900 truncate dark:text-slate-200">
                                 {tab.title}
                               </span>
-                              <span className="text-xs text-slate-500 break-all truncate">
+                              <span className="text-xs text-slate-500 break-all truncate dark:text-slate-400">
                                 {tab.url}
                               </span>
                             </span>

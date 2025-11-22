@@ -82,13 +82,16 @@ const FolderCard = ({
   };
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 flex flex-col">
+    <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 flex flex-col dark:bg-slate-800/60 dark:border-slate-700">
       <div className="flex gap-2 items-center justify-between">
-        <div className="flex flex-wrap items-center gap-2 text-slate-900 font-semibold">
+        <div className="flex flex-wrap items-center gap-2 text-slate-900 font-semibold dark:text-slate-100">
           {dragHandle}
-          <FontAwesomeIcon icon={faFolderOpen} className="text-indigo-500" />
+          <FontAwesomeIcon
+            icon={faFolderOpen}
+            className="text-indigo-500 dark:text-indigo-400"
+          />
           <span>{folder.name}</span>
-          <span className="flex items-center gap-1 text-xs font-normal text-slate-500">
+          <span className="flex items-center gap-1 text-xs font-normal text-slate-500 dark:text-slate-400">
             <FontAwesomeIcon icon={faBookmark} />
             {bookmarks.length} bookmark
             {bookmarks.length === 1 ? "" : "s"}
@@ -98,7 +101,7 @@ const FolderCard = ({
           <div className="flex items-center flex-wrap gap-2">
             <button
               type="button"
-              className={`${subtleButtonClasses} text-indigo-700 hover:text-indigo-800`}
+              className={`${subtleButtonClasses} text-indigo-700 hover:text-indigo-800 dark:text-indigo-300 dark:hover:text-indigo-200`}
               onClick={() => onOpenBookmarkModal(folder.id)}
               disabled={!allowSync}
             >
@@ -107,7 +110,7 @@ const FolderCard = ({
             {!editingName && (
               <button
                 type="button"
-                className={`${subtleButtonClasses} text-slate-600 hover:text-slate-700`}
+                className={`${subtleButtonClasses} text-slate-600 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300`}
                 onClick={() => {
                   setNameDraft(folder.name);
                   setEditingName(true);
@@ -119,7 +122,7 @@ const FolderCard = ({
             )}
             <button
               type="button"
-              className={`${subtleButtonClasses} text-rose-600 hover:text-rose-700`}
+              className={`${subtleButtonClasses} text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300`}
               onClick={() => onDeleteFolder(folder)}
               disabled={!allowSync}
             >

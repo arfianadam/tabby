@@ -250,12 +250,12 @@ const CollectionDetails = (props: CollectionDetailsProps) => {
     <section className={`${panelClass} min-h-0`}>
       <div className="flex flex-col gap-4 h-full overflow-hidden">
         <div className="flex gap-2 items-center justify-between">
-          <h2 className="text-xl font-semibold text-slate-900">
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
             {collection.name}
           </h2>
           {editingEnabled && (
             <button
-              className={`${subtleButtonClasses} text-rose-600 hover:text-rose-700`}
+              className={`${subtleButtonClasses} text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300`}
               type="button"
               onClick={() => onDeleteCollection(collection)}
               disabled={!editingEnabled}
@@ -266,7 +266,7 @@ const CollectionDetails = (props: CollectionDetailsProps) => {
         </div>
         {editingEnabled && (
           <form className="space-y-1" onSubmit={onCreateFolder}>
-            <label className="flex flex-col gap-1 text-sm font-medium uppercase text-slate-700">
+            <label className="flex flex-col gap-1 text-sm font-medium uppercase text-slate-700 dark:text-slate-300">
               New folder
               <div className="flex gap-2">
                 <input
@@ -298,7 +298,7 @@ const CollectionDetails = (props: CollectionDetailsProps) => {
         )}
         <div className="grow flex flex-col gap-4 overflow-hidden">
           {collection.folders.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500">
+            <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500 dark:border-slate-700 dark:text-slate-400">
               <p className="flex items-center justify-center gap-2 text-sm">
                 <FontAwesomeIcon icon={faFolder} />
                 {editingEnabled

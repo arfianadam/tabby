@@ -74,12 +74,12 @@ const DashboardToasts = ({
           isVisible={syncToastVisible}
           onExited={onSyncToastExited}
         >
-          <div className="flex items-center gap-3 rounded-2xl bg-emerald-600/95 px-4 py-3 text-sm font-medium text-white shadow-2xl">
+          <div className="flex items-center gap-3 rounded-2xl bg-emerald-600/95 px-4 py-3 text-sm font-medium text-white shadow-2xl dark:bg-emerald-500/95">
             <FontAwesomeIcon icon={faCloudArrowUp} className="text-base" />
             <span>Workspace reconnected. Changes sync automatically.</span>
             <button
               type="button"
-              className="rounded-full p-1 text-white/80 hover:bg-emerald-500/40"
+              className="rounded-full p-1 text-white/80 hover:bg-emerald-500/40 dark:hover:bg-emerald-400/40"
               onClick={onSyncToastDismiss}
               aria-label="Dismiss sync status"
             >

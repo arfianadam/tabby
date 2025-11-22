@@ -26,17 +26,17 @@ const BookmarkCard = ({
   })();
 
   return (
-    <article className="relative group rounded-2xl border border-slate-200 bg-white transition-colors hover:border-indigo-200 focus-within:border-indigo-200 max-w-90 shrink-0 h-full">
+    <article className="relative group rounded-2xl border border-slate-200 bg-white transition-colors hover:border-indigo-200 focus-within:border-indigo-200 max-w-90 shrink-0 h-full dark:bg-slate-800 dark:border-slate-700 dark:hover:border-indigo-800">
       <a
         href={bookmark.url}
         target="_self"
         className={`block h-full rounded-2xl p-4 ${
           allowSync ? "pr-12 pl-12" : "pr-4.5"
-        } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-indigo-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white`}
+        } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-indigo-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-indigo-800 dark:focus-visible:ring-offset-slate-800`}
       >
         <div className="flex flex-col gap-2">
           <div className="flex items-start gap-2">
-            <span className="h-6 w-6 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <span className="h-6 w-6 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300">
               {faviconSrc ? (
                 <img
                   src={faviconSrc}
@@ -50,19 +50,21 @@ const BookmarkCard = ({
                 </span>
               )}
             </span>
-            <p className="mt-0.5 text-sm font-semibold text-slate-900 transition group-hover:text-indigo-600 line-clamp-2">
+            <p className="mt-0.5 text-sm font-semibold text-slate-900 transition group-hover:text-indigo-600 line-clamp-2 dark:text-slate-100 dark:group-hover:text-indigo-400">
               {bookmark.title}
             </p>
           </div>
           {bookmark.note && (
-            <p className="text-sm text-slate-700">{bookmark.note}</p>
+            <p className="text-sm text-slate-700 dark:text-slate-300">
+              {bookmark.note}
+            </p>
           )}
         </div>
       </a>
       {dragHandle}
       {allowSync && (
         <button
-          className="absolute right-3 top-4 z-10 rounded-full text-slate-400 hover:bg-rose-50 cursor-pointer hover:text-rose-600 h-6 w-6 flex items-center justify-center"
+          className="absolute right-3 top-4 z-10 rounded-full text-slate-400 hover:bg-rose-50 cursor-pointer hover:text-rose-600 h-6 w-6 flex items-center justify-center dark:text-slate-500 dark:hover:bg-rose-900/30 dark:hover:text-rose-400"
           type="button"
           onClick={() => onDeleteBookmark(folderId, bookmark.id)}
           disabled={!allowSync}

@@ -90,10 +90,10 @@ const CollectionsSidebar = ({
               key={collection.id}
               role="button"
               tabIndex={0}
-              className={`flex items-center cursor-pointer justify-between rounded-2xl border px-3 py-3 text-sm transition hover:border-indigo-300 hover:text-indigo-900 ${
+              className={`flex items-center cursor-pointer justify-between rounded-2xl border px-3 py-3 text-sm transition hover:border-indigo-300 hover:text-indigo-900 dark:hover:border-indigo-500 dark:hover:text-indigo-100 ${
                 isActive
-                  ? "border-indigo-300 bg-indigo-50 text-indigo-900"
-                  : "border-slate-200 bg-white text-slate-800"
+                  ? "border-indigo-300 bg-indigo-50 text-indigo-900 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-100"
+                  : "border-slate-200 bg-white text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
               }`}
               onClick={() => handleCollectionClick(collection.id)}
               onKeyDown={(event) => {
@@ -106,15 +106,15 @@ const CollectionsSidebar = ({
                 <span
                   className={`rounded-full p-2 text-sm ${
                     isActive
-                      ? "bg-white/80 text-indigo-600"
-                      : "bg-slate-100 text-slate-500"
+                      ? "bg-white/80 text-indigo-600 dark:bg-slate-900/50 dark:text-indigo-400"
+                      : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
                   }`}
                 >
                   <FontAwesomeIcon icon={isActive ? faFolderOpen : faFolder} />
                 </span>
                 <div>
                   <p className="font-medium">{collection.name}</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     {collection.folders.length} folder
                     {collection.folders.length === 1 ? "" : "s"}
                   </p>

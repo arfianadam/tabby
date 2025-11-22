@@ -313,7 +313,7 @@ const Dashboard = ({
           />
         ) : (
           <section className={`${panelClass} grow min-h-0`}>
-            <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500">
+            <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500 dark:border-slate-700 dark:text-slate-400">
               {allowSync && loading
                 ? "Loading your collections…"
                 : "Create a collection on the left to begin."}

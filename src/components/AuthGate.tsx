@@ -23,17 +23,20 @@ import Dashboard from "./Dashboard";
 import WorkspaceBootstrap from "./WorkspaceBootstrap";
 
 const inputClasses =
-  "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20";
+  "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:bg-slate-900/50 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-800 dark:border-slate-700";
 const primaryButtonClasses =
-  "cursor-pointer inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-500 transition disabled:cursor-not-allowed disabled:opacity-60";
+  "cursor-pointer inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-500 transition disabled:cursor-not-allowed disabled:opacity-60 dark:bg-indigo-500 dark:hover:bg-indigo-400";
 const subtleButtonClasses =
-  "cursor-pointer inline-flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition";
+  "cursor-pointer inline-flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/50";
 
 const bannerToneClasses = {
-  info: "border-sky-200 bg-sky-50 text-sky-800",
-  success: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  danger: "border-rose-200 bg-rose-50 text-rose-800",
-  warning: "border-amber-200 bg-amber-50 text-amber-800",
+  info: "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900 dark:bg-sky-900/30 dark:text-sky-300",
+  success:
+    "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-300",
+  danger:
+    "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-900/30 dark:text-rose-300",
+  warning:
+    "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-900/30 dark:text-amber-300",
 } as const;
 
 const bannerToneIcons: Record<keyof typeof bannerToneClasses, IconDefinition> =
@@ -169,16 +172,16 @@ const AuthGate = () => {
       : faUserPlus;
 
   return (
-    <div className="w-full max-w-3xl mx-auto mt-60 rounded-3xl bg-white/90 p-6 shadow-2xl ring-1 ring-slate-100 backdrop-blur">
+    <div className="w-full max-w-3xl mx-auto mt-60 rounded-3xl bg-white/90 p-6 shadow-2xl ring-1 ring-slate-100 backdrop-blur dark:bg-slate-800/90 dark:ring-slate-700">
       <div className="flex flex-col gap-4">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600">
+          <p className="text-sm font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-400">
             Tabby collections
           </p>
-          <h1 className="text-2xl font-semibold text-slate-900">
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
             Sign in to sync your Toby-style workspace
           </h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             Everything is stored securely in Firebase, so every browser sees the
             same collections, folders, and bookmarks.
           </p>
@@ -186,7 +189,7 @@ const AuthGate = () => {
         {error && <Banner tone="warning">{error.message}</Banner>}
         {formError && <Banner tone="danger">{formError}</Banner>}
         <form className="space-y-4" onSubmit={onSubmit}>
-          <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+          <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 dark:text-slate-300">
             Email address
             <input
               required
@@ -199,7 +202,7 @@ const AuthGate = () => {
               className={inputClasses}
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+          <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 dark:text-slate-300">
             Password
             <input
               required
@@ -216,7 +219,7 @@ const AuthGate = () => {
           </label>
           {mode === "register" && (
             <>
-              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 dark:text-slate-300">
                 Confirm password
                 <input
                   required
@@ -228,7 +231,7 @@ const AuthGate = () => {
                   className={inputClasses}
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 dark:text-slate-300">
                 Invitation code
                 <input
                   required
@@ -244,10 +247,13 @@ const AuthGate = () => {
                 />
               </label>
               {missingInviteCode && (
-                <p className="flex items-center gap-2 text-sm text-slate-500">
-                  <FontAwesomeIcon icon={faKey} className="text-slate-400" />
+                <p className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                  <FontAwesomeIcon
+                    icon={faKey}
+                    className="text-slate-400 dark:text-slate-500"
+                  />
                   Set{" "}
-                  <code className="rounded bg-slate-100 px-1 py-0.5 text-xs text-slate-700">
+                  <code className="rounded bg-slate-100 px-1 py-0.5 text-xs text-slate-700 dark:bg-slate-700 dark:text-slate-200">
                     VITE_INVITE_CODE
                   </code>{" "}
                   in your environment to enable registration.

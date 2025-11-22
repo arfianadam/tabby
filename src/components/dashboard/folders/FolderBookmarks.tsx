@@ -19,7 +19,7 @@ const FolderBookmarks = ({
   return (
     <div className="mt-3">
       {bookmarks.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500 text-sm">
+        <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500 text-sm dark:border-slate-700 dark:text-slate-400">
           <p>
             {allowSync
               ? "This folder is empty. Use “Add bookmark” to save links here."
