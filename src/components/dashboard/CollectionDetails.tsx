@@ -179,12 +179,8 @@ const CollectionDetails = (props: CollectionDetailsProps) => {
     [collection.folders],
   );
   const faviconMap = useBookmarkFavicons(allBookmarks);
-  const {
-    foldersToRender,
-    folderOrder,
-    setFolderOrder,
-    moveBookmark,
-  } = useFolderOrdering(collection.folders);
+  const { foldersToRender, folderOrder, setFolderOrder, moveBookmark } =
+    useFolderOrdering(collection.folders);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;

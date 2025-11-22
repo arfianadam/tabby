@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Bookmark, Folder } from "../../types";
 import { arraysMatch } from "../../utils/arrays";
 
@@ -12,31 +12,48 @@ export const useFolderOrdering = (folders: Folder[]) => {
     Record<string, string[]>
   >({});
 
+  // Track the last server state we processed to avoid overwriting local optimistic updates
+  const lastServerStateRef = useRef<Record<string, string[]>>({});
+
   useEffect(() => {
     setFolderOrder((prev) => (arraysMatch(prev, folderIds) ? prev : folderIds));
   }, [folderIds]);
 
   useEffect(() => {
+    const currentServerState: Record<string, string[]> = {};
+    folders.forEach((f) => {
+      currentServerState[f.id] = f.bookmarks.map((b) => b.id);
+    });
+
+    const previousServerState = lastServerStateRef.current;
+
     setBookmarkOrders((prev) => {
       const next = { ...prev };
       let changed = false;
+
       folders.forEach((folder) => {
-        const currentOrder = prev[folder.id];
-        const remoteIds = folder.bookmarks.map((b) => b.id);
-        if (
-          !currentOrder ||
-          !arraysMatch(currentOrder, remoteIds)
-        ) {
-             const currentSet = new Set(currentOrder || []);
-             const remoteSet = new Set(remoteIds);
-             if (currentSet.size !== remoteSet.size || [...currentSet].some(id => !remoteSet.has(id))) {
-                 next[folder.id] = remoteIds;
-                 changed = true;
-             }
+        const folderId = folder.id;
+        const serverIds = currentServerState[folderId];
+        const lastServerIds = previousServerState[folderId];
+        const localIds = prev[folderId];
+
+        // Initialize if no local state
+        if (!localIds) {
+          next[folderId] = serverIds;
+          changed = true;
+          return;
+        }
+
+        // Only sync if the server state has actually changed since we last saw it
+        if (!lastServerIds || !arraysMatch(serverIds, lastServerIds)) {
+          next[folderId] = serverIds;
+          changed = true;
         }
       });
       return changed ? next : prev;
     });
+
+    lastServerStateRef.current = currentServerState;
   }, [folders]);
 
   // Map of all bookmarks available in the collection
@@ -53,24 +70,19 @@ export const useFolderOrdering = (folders: Folder[]) => {
       .filter((f): f is Folder => Boolean(f));
     const knownIds = new Set(folderOrder);
     const remaining = folders.filter((f) => !knownIds.has(f.id));
-    
+
     return [...ordered, ...remaining].map((folder) => {
       const bOrder = bookmarkOrders[folder.id];
       if (!bOrder) return folder;
-      
+
       // Use allBookmarksMap to resolve bookmarks, allowing moved bookmarks to be rendered
       const orderedBookmarks = bOrder
         .map((id) => allBookmarksMap.get(id))
         .filter((b): b is Bookmark => Boolean(b));
-        
-      const knownBIds = new Set(bOrder);
-      const remainingBookmarks = folder.bookmarks.filter(
-        (b) => !knownBIds.has(b.id),
-      );
-      
+
       return {
         ...folder,
-        bookmarks: [...orderedBookmarks, ...remainingBookmarks],
+        bookmarks: orderedBookmarks,
       };
     });
   }, [folders, folderOrder, bookmarkOrders, allBookmarksMap]);
@@ -90,7 +102,7 @@ export const useFolderOrdering = (folders: Folder[]) => {
   ) => {
     setBookmarkOrders((prev) => {
       const next = { ...prev };
-      
+
       // Helper to get current valid ID list for a folder
       const getList = (fId: string) => {
         if (next[fId]) return [...next[fId]];

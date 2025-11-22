@@ -58,12 +58,10 @@ const SortableBookmarkCard = ({
 
   const dragIndex = active?.data.current?.index || 0;
 
-  const placeAfter =
-    showPlaceholder && isSameFolder && dragIndex < index;
-  
+  const placeAfter = showPlaceholder && isSameFolder && dragIndex < index;
+
   // For cross-folder drag, default to placing before (insert at current index)
-  const placeBefore =
-    showPlaceholder && (!isSameFolder || dragIndex > index);
+  const placeBefore = showPlaceholder && (!isSameFolder || dragIndex > index);
 
   return (
     <div

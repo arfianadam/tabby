@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "build:dev": "NODE_ENV=development vite build --mode development --config vite.dev.config.ts",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "preview": "vite preview"
