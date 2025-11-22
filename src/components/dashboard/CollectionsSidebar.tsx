@@ -74,6 +74,16 @@ const CollectionsSidebar = ({
     );
   }, [isCollapsed]);
   const { isDark, toggleDarkMode } = useDarkMode();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const sidebarButtonClasses = `${subtleButtonClasses.replace("transition", "")} ${
+    mounted ? "transition" : ""
+  }`;
+
   const canEdit = allowSync && editMode;
   const handleCollectionClick = (collectionId: string) =>
     onSelectCollection(collectionId);
@@ -88,7 +98,7 @@ const CollectionsSidebar = ({
 
   return (
     <aside
-      className={`${panelClass} min-h-0 transition-all duration-300 ease-in-out flex flex-col ${
+      className={`${panelClass} min-h-0 transition-[width] duration-300 ease-in-out flex flex-col ${
         isCollapsed ? "w-16" : "w-80"
       }`}
     >
@@ -251,7 +261,7 @@ const CollectionsSidebar = ({
         <div className={`flex ${isCollapsed ? "flex-col gap-2" : "gap-2"}`}>
           {/* Edit Mode Toggle */}
           <button
-            className={`${subtleButtonClasses} ${
+            className={`${sidebarButtonClasses} ${
               isCollapsed ? collapsedButtonClass : "flex-1 gap-2"
             } ${
               editMode
@@ -269,7 +279,7 @@ const CollectionsSidebar = ({
 
           {/* Dark Mode Toggle */}
           <button
-            className={`${subtleButtonClasses} ${isCollapsed ? collapsedButtonClass : "px-3"}`}
+            className={`${sidebarButtonClasses} ${isCollapsed ? collapsedButtonClass : "px-3"}`}
             onClick={toggleDarkMode}
             type="button"
             title={isDark ? "Switch to light mode" : "Switch to dark mode"}
@@ -280,7 +290,7 @@ const CollectionsSidebar = ({
 
         {/* Sign Out */}
         <button
-          className={`${subtleButtonClasses} text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 ${isCollapsed ? collapsedButtonClass : "w-full gap-2"}`}
+          className={`${sidebarButtonClasses} text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 ${isCollapsed ? collapsedButtonClass : "w-full gap-2"}`}
           onClick={onSignOut}
           type="button"
           title="Sign out"
