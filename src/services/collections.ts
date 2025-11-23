@@ -237,6 +237,57 @@ export const addBookmarksToFolder = async (
   });
 };
 
+export const updateBookmarkInFolder = async (
+  uid: string,
+  collectionId: string,
+  folderId: string,
+  bookmarkId: string,
+  payload: Partial<BookmarkDraft>,
+) =>
+  mutateCollection(uid, collectionId, (collection) => {
+    let folderFound = false;
+    let bookmarkFound = false;
+
+    const folders = collection.folders.map((folder) => {
+      if (folder.id !== folderId) {
+        return folder;
+      }
+      folderFound = true;
+
+      const bookmarks = folder.bookmarks.map((bookmark) => {
+        if (bookmark.id !== bookmarkId) {
+          return bookmark;
+        }
+        bookmarkFound = true;
+        return {
+          ...bookmark,
+          title:
+            (payload.title ?? bookmark.title).trim() || "Untitled bookmark",
+          url: normalizeUrl(payload.url ?? bookmark.url),
+          note: (payload.note ?? bookmark.note ?? "").trim(),
+        };
+      });
+
+      return {
+        ...folder,
+        bookmarks,
+      };
+    });
+
+    if (!folderFound) {
+      throw new Error("Folder not found.");
+    }
+
+    if (!bookmarkFound) {
+      throw new Error("Bookmark not found.");
+    }
+
+    return {
+      ...collection,
+      folders,
+    };
+  });
+
 export const deleteBookmarkFromFolder = async (
   uid: string,
   collectionId: string,

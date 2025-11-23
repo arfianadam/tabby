@@ -28,6 +28,7 @@ type FolderCardProps = {
   onRenameFolder: (folder: Folder, name: string) => Promise<boolean>;
   onDeleteBookmark: (folderId: string, bookmarkId: string) => void;
   faviconMap: Record<string, string | null>;
+  onEditBookmark: (folderId: string, bookmark: Bookmark) => void;
   dragHandle?: ReactNode;
 };
 
@@ -40,6 +41,7 @@ const FolderCard = ({
   onRenameFolder,
   onDeleteBookmark,
   faviconMap,
+  onEditBookmark,
   dragHandle,
 }: FolderCardProps) => {
   const [editingName, setEditingName] = useState(false);
@@ -197,6 +199,7 @@ const FolderCard = ({
         allowSync={allowSync}
         onDeleteBookmark={onDeleteBookmark}
         faviconMap={faviconMap}
+        onEditBookmark={onEditBookmark}
       />
     </article>
   );

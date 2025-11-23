@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faPen, faTrash } from "@fortawesome/free-solid-svg-icons";
 import type { Bookmark } from "../../../types";
 import { dangerGhostButtonClasses } from "../constants";
 
@@ -9,6 +9,7 @@ type BookmarkCardProps = {
   allowSync: boolean;
   faviconSrc: string | null;
   onDeleteBookmark: (folderId: string, bookmarkId: string) => void;
+  onEditBookmark: (folderId: string, bookmark: Bookmark) => void;
   dragHandle?: React.ReactNode;
 };
 
@@ -18,6 +19,7 @@ const BookmarkCard = ({
   allowSync,
   faviconSrc,
   onDeleteBookmark,
+  onEditBookmark,
   dragHandle,
 }: BookmarkCardProps) => {
   const fallbackInitial = (() => {
@@ -32,7 +34,7 @@ const BookmarkCard = ({
         href={bookmark.url}
         target="_self"
         className={`block h-full rounded-2xl p-3 ${
-          allowSync ? "pr-10 pl-10" : "pr-3.5"
+          allowSync ? "pr-20 pl-10" : "pr-3.5"
         } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-indigo-800 dark:focus-visible:ring-offset-slate-800`}
       >
         <div className="flex items-center gap-2">
@@ -57,15 +59,26 @@ const BookmarkCard = ({
       </a>
       {dragHandle}
       {allowSync && (
-        <button
-          className={`absolute right-3 top-3 z-10 h-6 w-6 ${dangerGhostButtonClasses}`}
-          type="button"
-          onClick={() => onDeleteBookmark(folderId, bookmark.id)}
-          disabled={!allowSync}
-          aria-label={`Delete bookmark ${bookmark.title}`}
-        >
-          <FontAwesomeIcon icon={faTrash} />
-        </button>
+        <div className="absolute right-2 top-2 z-10 flex items-center gap-1">
+          <button
+            className="h-7 w-7 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
+            type="button"
+            onClick={() => onEditBookmark(folderId, bookmark)}
+            disabled={!allowSync}
+            aria-label={`Edit bookmark ${bookmark.title}`}
+          >
+            <FontAwesomeIcon icon={faPen} className="text-xs" />
+          </button>
+          <button
+            className={`h-7 w-7 flex items-center justify-center ${dangerGhostButtonClasses}`}
+            type="button"
+            onClick={() => onDeleteBookmark(folderId, bookmark.id)}
+            disabled={!allowSync}
+            aria-label={`Delete bookmark ${bookmark.title}`}
+          >
+            <FontAwesomeIcon icon={faTrash} className="text-xs" />
+          </button>
+        </div>
       )}
     </article>
   );

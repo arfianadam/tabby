@@ -136,6 +136,8 @@ type CollectionDetailsProps = {
     targetFolderId: string,
     targetIndex: number,
   ) => void;
+  isEditing: boolean;
+  onEditBookmark: (folderId: string, bookmark: Bookmark) => void;
 };
 
 const CollectionDetails = (props: CollectionDetailsProps) => {
@@ -163,6 +165,8 @@ const CollectionDetails = (props: CollectionDetailsProps) => {
     onReorderFolders,
     onReorderBookmarks,
     onMoveBookmark,
+    isEditing,
+    onEditBookmark,
   } = props;
 
   const editingEnabled = allowSync && editMode;
@@ -326,6 +330,7 @@ const CollectionDetails = (props: CollectionDetailsProps) => {
                     onRenameFolder={onRenameFolder}
                     onDeleteBookmark={onDeleteBookmark}
                     faviconMap={faviconMap}
+                    onEditBookmark={onEditBookmark}
                   />
                 ))}
               </div>
@@ -337,6 +342,7 @@ const CollectionDetails = (props: CollectionDetailsProps) => {
         folder={activeBookmarkFolder}
         open={Boolean(activeBookmarkFolder) && editingEnabled}
         allowSync={editingEnabled}
+        isEditing={isEditing}
         bookmarkForm={bookmarkForm}
         onBookmarkFormChange={onBookmarkFormChange}
         onAddBookmark={onAddBookmark}

@@ -6,7 +6,7 @@ import { useSelectedCollection } from "../hooks/dashboard/useSelectedCollection"
 import { useBookmarkModalState } from "../hooks/dashboard/useBookmarkModalState";
 import { useDashboardNotifications } from "../hooks/dashboard/useDashboardNotifications";
 import { useCollectionActions } from "../hooks/dashboard/useCollectionActions";
-import type { BookmarkDraft, Collection, Folder } from "../types";
+import type { Bookmark, BookmarkDraft, Collection, Folder } from "../types";
 import CollectionDetails from "./dashboard/CollectionDetails";
 import CollectionsSidebar from "./dashboard/CollectionsSidebar";
 import DashboardToasts from "./dashboard/DashboardToasts";
@@ -41,8 +41,10 @@ const Dashboard = ({
     useSelectedCollection(collections);
   const {
     bookmarkModalFolderId,
+    editingBookmarkId,
     bookmarkForm,
     openBookmarkModal,
+    openEditBookmarkModal,
     closeBookmarkModal,
     handleBookmarkFormChange,
   } = useBookmarkModalState(selectedCollectionId);
@@ -68,6 +70,7 @@ const Dashboard = ({
     deleteFolder: deleteFolderAction,
     renameFolder: renameFolderAction,
     saveBookmarks,
+    updateBookmark,
     deleteBookmark: deleteBookmarkAction,
     reorderFolders: reorderFoldersAction,
     reorderBookmarks: reorderBookmarksAction,
@@ -169,6 +172,20 @@ const Dashboard = ({
     openBookmarkModal(folderId);
   };
 
+  const handleEditBookmark = (folderId: string, bookmark: Bookmark) => {
+    if (!editingEnabled) {
+      return;
+    }
+    if (!selectedCollection) {
+      notify("Create or select a collection first.", "danger");
+      return;
+    }
+    if (guardSync()) {
+      return;
+    }
+    openEditBookmarkModal(folderId, bookmark);
+  };
+
   const handleAddBookmark = (
     event: React.FormEvent<HTMLFormElement>,
     folderId: string,
@@ -178,11 +195,23 @@ const Dashboard = ({
       return;
     }
     void (async () => {
-      const result = await saveBookmarks(selectedCollection, folderId, [
-        bookmarkForm,
-      ]);
-      if (result.success) {
-        closeBookmarkModal();
+      if (editingBookmarkId) {
+        const success = await updateBookmark(
+          selectedCollection,
+          folderId,
+          editingBookmarkId,
+          bookmarkForm,
+        );
+        if (success) {
+          closeBookmarkModal();
+        }
+      } else {
+        const result = await saveBookmarks(selectedCollection, folderId, [
+          bookmarkForm,
+        ]);
+        if (result.success) {
+          closeBookmarkModal();
+        }
       }
     })();
   };
@@ -305,6 +334,8 @@ const Dashboard = ({
             onReorderFolders={handleReorderFolders}
             onReorderBookmarks={handleReorderBookmarks}
             onMoveBookmark={handleMoveBookmark}
+            isEditing={!!editingBookmarkId}
+            onEditBookmark={handleEditBookmark}
           />
         ) : (
           <section className={`${panelClass} grow min-h-0`}>

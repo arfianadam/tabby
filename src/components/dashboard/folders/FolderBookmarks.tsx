@@ -7,6 +7,7 @@ type FolderBookmarksProps = {
   allowSync: boolean;
   onDeleteBookmark: (folderId: string, bookmarkId: string) => void;
   faviconMap: Record<string, string | null>;
+  onEditBookmark: (folderId: string, bookmark: Bookmark) => void;
 };
 
 const FolderBookmarks = ({
@@ -15,6 +16,7 @@ const FolderBookmarks = ({
   allowSync,
   onDeleteBookmark,
   faviconMap,
+  onEditBookmark,
 }: FolderBookmarksProps) => {
   return (
     <div className="mt-3">
@@ -37,6 +39,7 @@ const FolderBookmarks = ({
               allowSync={allowSync}
               faviconSrc={faviconMap[bookmark.id] ?? null}
               onDeleteBookmark={onDeleteBookmark}
+              onEditBookmark={onEditBookmark}
             />
           ))}
         </div>

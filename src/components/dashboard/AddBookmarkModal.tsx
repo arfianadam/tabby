@@ -18,6 +18,7 @@ type AddBookmarkModalProps = {
   folder: Folder | null;
   open: boolean;
   allowSync: boolean;
+  isEditing: boolean;
   bookmarkForm: BookmarkFormState;
   onBookmarkFormChange: (field: keyof BookmarkFormState, value: string) => void;
   onAddBookmark: (
@@ -37,6 +38,7 @@ const AddBookmarkModal = ({
   folder,
   open,
   allowSync,
+  isEditing,
   bookmarkForm,
   onBookmarkFormChange,
   onAddBookmark,
@@ -53,7 +55,7 @@ const AddBookmarkModal = ({
   const tabFavicons = useFavicons(tabs);
 
   useEffect(() => {
-    if (!open) {
+    if (!open || isEditing) {
       setTabs([]);
       setActiveTabId(null);
       setSelectedTabIds([]);
@@ -97,7 +99,7 @@ const AddBookmarkModal = ({
     return () => {
       cancelled = true;
     };
-  }, [open, hasChromeTabsSupport]);
+  }, [open, hasChromeTabsSupport, isEditing]);
 
   useEffect(() => {
     if (activeTabId === null) {
@@ -169,12 +171,14 @@ const AddBookmarkModal = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="flex flex-col relative z-10 w-full max-w-6xl h-125 rounded-2xl bg-white shadow-2xl dark:bg-slate-800"
+        className={`flex flex-col relative z-10 w-full rounded-2xl bg-white shadow-2xl dark:bg-slate-800 ${
+          isEditing ? "max-w-xl h-auto" : "max-w-6xl h-125"
+        }`}
       >
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-700">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              Add bookmark
+              {isEditing ? "Edit bookmark" : "Add bookmark"}
             </p>
             <h3
               id={titleId}
@@ -245,136 +249,142 @@ const AddBookmarkModal = ({
                     icon={savingBookmark ? faSpinner : faBookmark}
                     spin={savingBookmark}
                   />
-                  {savingBookmark ? "Saving…" : "Save bookmark"}
+                  {savingBookmark
+                    ? "Saving…"
+                    : isEditing
+                      ? "Save changes"
+                      : "Save bookmark"}
                 </button>
               </div>
             </div>
-            <div className="w-160 space-y-2 border-slate-100 border-l pl-4 flex flex-col dark:border-slate-700">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  <FontAwesomeIcon icon={faListUl} />
-                  Select from tabs in this window
-                </p>
-                <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                  {selectedTabCount > 0 && (
-                    <span className="font-semibold text-slate-600 dark:text-slate-300">
-                      {selectedTabCount}{" "}
-                      {selectedTabCount === 1 ? "tab" : "tabs"} selected
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    className={`${actionButtonClasses} gap-2 py-1.5 px-3 text-xs`}
-                    disabled={addSelectedDisabled}
-                    onClick={handleAddSelectedTabs}
-                  >
-                    <FontAwesomeIcon
-                      icon={savingBookmark ? faSpinner : faBookmark}
-                      spin={savingBookmark}
-                    />
-                    {savingBookmark && selectedTabCount > 0
-                      ? "Saving…"
-                      : addSelectedLabel}
-                  </button>
+            {!isEditing && (
+              <div className="w-160 space-y-2 border-slate-100 border-l pl-4 flex flex-col dark:border-slate-700">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    <FontAwesomeIcon icon={faListUl} />
+                    Select from tabs in this window
+                  </p>
+                  <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                    {selectedTabCount > 0 && (
+                      <span className="font-semibold text-slate-600 dark:text-slate-300">
+                        {selectedTabCount}{" "}
+                        {selectedTabCount === 1 ? "tab" : "tabs"} selected
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      className={`${actionButtonClasses} gap-2 py-1.5 px-3 text-xs`}
+                      disabled={addSelectedDisabled}
+                      onClick={handleAddSelectedTabs}
+                    >
+                      <FontAwesomeIcon
+                        icon={savingBookmark ? faSpinner : faBookmark}
+                        spin={savingBookmark}
+                      />
+                      {savingBookmark && selectedTabCount > 0
+                        ? "Saving…"
+                        : addSelectedLabel}
+                    </button>
+                  </div>
                 </div>
-              </div>
-              {!hasChromeTabsSupport ? (
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Load the built extension to list and capture tabs from the
-                  current window.
-                </p>
-              ) : tabsLoading ? (
-                <p className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                  <FontAwesomeIcon icon={faSpinner} spin />
-                  Loading tabs…
-                </p>
-              ) : tabError ? (
-                <p className="text-xs text-rose-600 dark:text-rose-400">
-                  {tabError}
-                </p>
-              ) : tabs.length === 0 ? (
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  No tabs detected in this window.
-                </p>
-              ) : (
-                <ul className="grow min-h-0 overflow-y-auto rounded-2xl border border-slate-200 bg-white text-left dark:bg-slate-800 dark:border-slate-700">
-                  {orderedTabs.map((tab) => {
-                    const isActive = tab.id === activeTabId;
-                    const isBatchSelected = selectedTabIds.includes(tab.id);
-                    const faviconSrc = tabFavicons[tab.id] ?? null;
-                    const fallbackInitial = (() => {
-                      const source =
-                        tab.title.trim() ||
-                        tab.url.replace(/^https?:\/\//i, "");
-                      return source ? source.charAt(0).toUpperCase() : "•";
-                    })();
-                    const toggleLabel = isBatchSelected
-                      ? "Deselect tab for batch add"
-                      : "Select tab for batch add";
-                    return (
-                      <li
-                        key={tab.id}
-                        className="border-b border-slate-100 last:border-b-0 dark:border-slate-700"
-                      >
-                        <div
-                          className={`flex w-full items-start gap-3 p-3 text-left transition ${
-                            isActive
-                              ? "bg-indigo-50/80 dark:bg-indigo-900/50"
-                              : "hover:bg-slate-50 dark:hover:bg-slate-700/50"
-                          }`}
+                {!hasChromeTabsSupport ? (
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Load the built extension to list and capture tabs from the
+                    current window.
+                  </p>
+                ) : tabsLoading ? (
+                  <p className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                    <FontAwesomeIcon icon={faSpinner} spin />
+                    Loading tabs…
+                  </p>
+                ) : tabError ? (
+                  <p className="text-xs text-rose-600 dark:text-rose-400">
+                    {tabError}
+                  </p>
+                ) : tabs.length === 0 ? (
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    No tabs detected in this window.
+                  </p>
+                ) : (
+                  <ul className="grow min-h-0 overflow-y-auto rounded-2xl border border-slate-200 bg-white text-left dark:bg-slate-800 dark:border-slate-700">
+                    {orderedTabs.map((tab) => {
+                      const isActive = tab.id === activeTabId;
+                      const isBatchSelected = selectedTabIds.includes(tab.id);
+                      const faviconSrc = tabFavicons[tab.id] ?? null;
+                      const fallbackInitial = (() => {
+                        const source =
+                          tab.title.trim() ||
+                          tab.url.replace(/^https?:\/\//i, "");
+                        return source ? source.charAt(0).toUpperCase() : "•";
+                      })();
+                      const toggleLabel = isBatchSelected
+                        ? "Deselect tab for batch add"
+                        : "Select tab for batch add";
+                      return (
+                        <li
+                          key={tab.id}
+                          className="border-b border-slate-100 last:border-b-0 dark:border-slate-700"
                         >
-                          <button
-                            type="button"
-                            className={`shrink-0 flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold transition ${
-                              isBatchSelected
-                                ? "border-indigo-600 bg-indigo-600 text-white dark:border-indigo-500 dark:bg-indigo-500"
-                                : "border-slate-300 text-slate-400 hover:border-indigo-300 dark:border-slate-600 dark:text-slate-500 dark:hover:border-indigo-500"
+                          <div
+                            className={`flex w-full items-start gap-3 p-3 text-left transition ${
+                              isActive
+                                ? "bg-indigo-50/80 dark:bg-indigo-900/50"
+                                : "hover:bg-slate-50 dark:hover:bg-slate-700/50"
                             }`}
-                            aria-pressed={isBatchSelected}
-                            aria-label={toggleLabel}
-                            onClick={() => toggleTabSelection(tab.id)}
                           >
-                            {isBatchSelected ? (
-                              <FontAwesomeIcon icon={faCheck} />
-                            ) : (
-                              <span className="sr-only">{toggleLabel}</span>
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            className="flex-1 min-w-0 flex w-full items-start gap-3 text-left"
-                            onClick={() => handleSelectTab(tab)}
-                          >
-                            <span className="h-6 w-6 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                              {faviconSrc ? (
-                                <img
-                                  src={faviconSrc}
-                                  alt=""
-                                  className="h-full w-full object-cover"
-                                  loading="lazy"
-                                />
+                            <button
+                              type="button"
+                              className={`shrink-0 flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold transition ${
+                                isBatchSelected
+                                  ? "border-indigo-600 bg-indigo-600 text-white dark:border-indigo-500 dark:bg-indigo-500"
+                                  : "border-slate-300 text-slate-400 hover:border-indigo-300 dark:border-slate-600 dark:text-slate-500 dark:hover:border-indigo-500"
+                              }`}
+                              aria-pressed={isBatchSelected}
+                              aria-label={toggleLabel}
+                              onClick={() => toggleTabSelection(tab.id)}
+                            >
+                              {isBatchSelected ? (
+                                <FontAwesomeIcon icon={faCheck} />
                               ) : (
-                                <span className="flex h-full w-full items-center justify-center">
-                                  {fallbackInitial}
-                                </span>
+                                <span className="sr-only">{toggleLabel}</span>
                               )}
-                            </span>
-                            <span className="flex min-w-0 flex-col">
-                              <span className="text-sm font-medium text-slate-900 truncate dark:text-slate-200">
-                                {tab.title}
+                            </button>
+                            <button
+                              type="button"
+                              className="flex-1 min-w-0 flex w-full items-start gap-3 text-left"
+                              onClick={() => handleSelectTab(tab)}
+                            >
+                              <span className="h-6 w-6 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                                {faviconSrc ? (
+                                  <img
+                                    src={faviconSrc}
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <span className="flex h-full w-full items-center justify-center">
+                                    {fallbackInitial}
+                                  </span>
+                                )}
                               </span>
-                              <span className="text-xs text-slate-500 break-all truncate dark:text-slate-400">
-                                {tab.url}
+                              <span className="flex min-w-0 flex-col">
+                                <span className="text-sm font-medium text-slate-900 truncate dark:text-slate-200">
+                                  {tab.title}
+                                </span>
+                                <span className="text-xs text-slate-500 break-all truncate dark:text-slate-400">
+                                  {tab.url}
+                                </span>
                               </span>
-                            </span>
-                          </button>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
         </form>
       </div>

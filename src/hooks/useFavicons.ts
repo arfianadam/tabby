@@ -9,19 +9,20 @@ export type FaviconTarget = {
   url: string;
 };
 
-type IconMap = Record<string, string>;
+type IconMap = Record<string, { url: string; data: string }>;
 
 export const useFavicons = (targets: FaviconTarget[]) => {
   const [icons, setIcons] = useState<IconMap>({});
-  const requestedRef = useRef<Set<string>>(new Set());
+  const requestedRef = useRef<Map<string, string>>(new Map());
 
-  // Drop icons for targets that no longer exist so we do not leak memory.
+  // Drop icons for targets that no longer exist or whose URL changed.
   useEffect(() => {
     setIcons((prev) => {
       const next: IconMap = {};
       targets.forEach((target) => {
-        if (prev[target.id]) {
-          next[target.id] = prev[target.id];
+        const entry = prev[target.id];
+        if (entry && entry.url === target.url) {
+          next[target.id] = entry;
         }
       });
       if (Object.keys(prev).length === Object.keys(next).length) {
@@ -29,11 +30,15 @@ export const useFavicons = (targets: FaviconTarget[]) => {
       }
       return next;
     });
-    requestedRef.current.forEach((id) => {
-      if (!targets.some((target) => target.id === id)) {
+
+    const currentTargetMap = new Map(targets.map((t) => [t.id, t.url]));
+    for (const [id, url] of requestedRef.current.entries()) {
+      if (!currentTargetMap.has(id)) {
+        requestedRef.current.delete(id);
+      } else if (currentTargetMap.get(id) !== url) {
         requestedRef.current.delete(id);
       }
-    });
+    }
   }, [targets]);
 
   useEffect(() => {
@@ -48,13 +53,13 @@ export const useFavicons = (targets: FaviconTarget[]) => {
       }
       const cached = getCachedFaviconDataUrl(target.url);
       if (cached) {
-        cachedUpdates[target.id] = cached;
+        cachedUpdates[target.id] = { url: target.url, data: cached };
         return false;
       }
-      if (requestedRef.current.has(target.id)) {
+      if (requestedRef.current.get(target.id) === target.url) {
         return false;
       }
-      requestedRef.current.add(target.id);
+      requestedRef.current.set(target.id, target.url);
       return true;
     });
 
@@ -71,7 +76,7 @@ export const useFavicons = (targets: FaviconTarget[]) => {
       const results = await Promise.allSettled(
         toFetch.map(async (target) => {
           const icon = await fetchAndCacheFavicon(target.url);
-          return { id: target.id, icon };
+          return { id: target.id, url: target.url, icon };
         }),
       );
 
@@ -82,7 +87,10 @@ export const useFavicons = (targets: FaviconTarget[]) => {
       const updates: IconMap = {};
       results.forEach((result) => {
         if (result.status === "fulfilled" && result.value.icon) {
-          updates[result.value.id] = result.value.icon;
+          updates[result.value.id] = {
+            url: result.value.url,
+            data: result.value.icon,
+          };
         }
       });
 
@@ -102,7 +110,7 @@ export const useFavicons = (targets: FaviconTarget[]) => {
     const map: Record<string, string | null> = {};
     targets.forEach((target) => {
       map[target.id] =
-        icons[target.id] ?? getCachedFaviconDataUrl(target.url) ?? null;
+        icons[target.id]?.data ?? getCachedFaviconDataUrl(target.url) ?? null;
     });
     return map;
   }, [targets, icons]);

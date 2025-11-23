@@ -3,29 +3,49 @@ import {
   getInitialBookmarkFormState,
   type BookmarkFormState,
 } from "../../components/dashboard/types";
+import type { Bookmark } from "../../types";
 
 export const useBookmarkModalState = (selectedCollectionId: string | null) => {
   const [bookmarkModalFolderId, setBookmarkModalFolderId] = useState<
     string | null
   >(null);
+  const [editingBookmarkId, setEditingBookmarkId] = useState<string | null>(
+    null,
+  );
   const [bookmarkForm, setBookmarkForm] = useState<BookmarkFormState>(
     getInitialBookmarkFormState,
   );
 
   useEffect(() => {
     setBookmarkModalFolderId(null);
+    setEditingBookmarkId(null);
     setBookmarkForm(getInitialBookmarkFormState());
   }, [selectedCollectionId]);
 
   const closeBookmarkModal = useCallback(() => {
     setBookmarkModalFolderId(null);
+    setEditingBookmarkId(null);
     setBookmarkForm(getInitialBookmarkFormState());
   }, []);
 
   const openBookmarkModal = useCallback((folderId: string) => {
     setBookmarkModalFolderId(folderId);
+    setEditingBookmarkId(null);
     setBookmarkForm(getInitialBookmarkFormState());
   }, []);
+
+  const openEditBookmarkModal = useCallback(
+    (folderId: string, bookmark: Bookmark) => {
+      setBookmarkModalFolderId(folderId);
+      setEditingBookmarkId(bookmark.id);
+      setBookmarkForm({
+        title: bookmark.title,
+        url: bookmark.url,
+        note: bookmark.note ?? "",
+      });
+    },
+    [],
+  );
 
   const handleBookmarkFormChange = useCallback(
     (field: keyof BookmarkFormState, value: string) => {
@@ -43,8 +63,10 @@ export const useBookmarkModalState = (selectedCollectionId: string | null) => {
 
   return {
     bookmarkModalFolderId,
+    editingBookmarkId,
     bookmarkForm,
     openBookmarkModal,
+    openEditBookmarkModal,
     closeBookmarkModal,
     handleBookmarkFormChange,
     resetBookmarkForm,

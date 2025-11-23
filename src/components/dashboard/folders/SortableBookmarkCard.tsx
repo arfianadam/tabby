@@ -11,6 +11,7 @@ type SortableBookmarkCardProps = {
   index: number;
   faviconSrc: string | null;
   onDeleteBookmark: (folderId: string, bookmarkId: string) => void;
+  onEditBookmark: (folderId: string, bookmark: Bookmark) => void;
 };
 
 const SortableBookmarkCard = ({
@@ -20,6 +21,7 @@ const SortableBookmarkCard = ({
   index,
   faviconSrc,
   onDeleteBookmark,
+  onEditBookmark,
 }: SortableBookmarkCardProps) => {
   const { active } = useDndContext();
   const {
@@ -80,6 +82,7 @@ const SortableBookmarkCard = ({
         allowSync={allowSync}
         faviconSrc={faviconSrc}
         onDeleteBookmark={onDeleteBookmark}
+        onEditBookmark={onEditBookmark}
         dragHandle={
           allowSync ? (
             <DragHandle

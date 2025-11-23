@@ -11,6 +11,7 @@ import {
   reorderFolders as requestReorderFolders,
   restoreBookmarkToFolder as requestRestoreBookmarkToFolder,
   moveBookmarkBetweenFolders as requestMoveBookmarkBetweenFolders,
+  updateBookmarkInFolder as requestUpdateBookmarkInFolder,
 } from "../../services/collections";
 import type { Bookmark, BookmarkDraft, Collection, Folder } from "../../types";
 import type { Banner } from "../../components/dashboard/types";
@@ -221,6 +222,52 @@ export const useCollectionActions = (
     [guardSync, notify, userId],
   );
 
+  const updateBookmark = useCallback(
+    async (
+      collection: Collection | null,
+      folderId: string,
+      bookmarkId: string,
+      data: Partial<BookmarkDraft>,
+    ) => {
+      if (!collection || guardSync()) {
+        return false;
+      }
+      const folder = collection.folders.find((entry) => entry.id === folderId);
+      if (!folder) {
+        notify("The selected folder is no longer available.", "danger");
+        return false;
+      }
+
+      // Simple validation
+      if (data.url && !data.url.trim()) {
+        notify("Provide a URL before saving a bookmark.", "danger");
+        return false;
+      }
+
+      setSavingBookmark(true);
+      try {
+        await requestUpdateBookmarkInFolder(
+          userId,
+          collection.id,
+          folder.id,
+          bookmarkId,
+          data,
+        );
+        notify("Bookmark updated.", "success");
+        return true;
+      } catch (err) {
+        notify(
+          err instanceof Error ? err.message : "Unable to update bookmark.",
+          "danger",
+        );
+        return false;
+      } finally {
+        setSavingBookmark(false);
+      }
+    },
+    [guardSync, notify, userId],
+  );
+
   const restoreBookmark = useCallback(
     async (params: {
       bookmark: Bookmark;
@@ -377,6 +424,7 @@ export const useCollectionActions = (
     deleteFolder,
     renameFolder,
     saveBookmarks,
+    updateBookmark,
     deleteBookmark,
     reorderFolders,
     reorderBookmarks,

@@ -15,6 +15,7 @@ type SortableFolderCardProps = {
   onRenameFolder: (folder: Folder, name: string) => Promise<boolean>;
   onDeleteBookmark: (folderId: string, bookmarkId: string) => void;
   faviconMap: Record<string, string | null>;
+  onEditBookmark: (folderId: string, bookmark: Bookmark) => void;
 };
 
 const SortableFolderCard = ({
@@ -28,6 +29,7 @@ const SortableFolderCard = ({
   onRenameFolder,
   onDeleteBookmark,
   faviconMap,
+  onEditBookmark,
 }: SortableFolderCardProps) => {
   const { active } = useDndContext();
   const {
@@ -93,6 +95,7 @@ const SortableFolderCard = ({
         onRenameFolder={onRenameFolder}
         onDeleteBookmark={onDeleteBookmark}
         faviconMap={faviconMap}
+        onEditBookmark={onEditBookmark}
         dragHandle={
           editingEnabled ? (
             <DragHandle
