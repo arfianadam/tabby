@@ -312,7 +312,7 @@ const CollectionDetails = (props: CollectionDetailsProps) => {
               collisionDetection={collisionDetectionStrategy}
               onDragEnd={handleDragEnd}
             >
-              <div className="grow overflow-y-auto flex flex-col gap-4 p-2">
+              <div className="grow overflow-y-auto p-2 block columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-4">
                 {foldersToRender.map((folder, index) => (
                   <SortableFolderCard
                     key={folder.id}

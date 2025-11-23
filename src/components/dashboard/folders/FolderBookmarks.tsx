@@ -27,7 +27,7 @@ const FolderBookmarks = ({
           </p>
         </div>
       ) : (
-        <div className="flex gap-3 flex-wrap">
+        <div className="grid gap-3 grid-cols-1">
           {bookmarks.map((bookmark, index) => (
             <SortableBookmarkCard
               key={bookmark.id}

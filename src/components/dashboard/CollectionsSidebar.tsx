@@ -100,7 +100,7 @@ const CollectionsSidebar = ({
   return (
     <aside
       className={`${panelClass} box-content min-h-0 transition-[width] duration-300 ease-in-out flex flex-col overflow-hidden ${
-        isCollapsed ? "w-12 items-start" : "w-80"
+        isCollapsed ? "w-12 items-start" : "w-64"
       }`}
     >
       {/* Header Section */}

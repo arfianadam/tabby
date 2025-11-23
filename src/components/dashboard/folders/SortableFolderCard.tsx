@@ -1,9 +1,8 @@
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGripVertical } from "@fortawesome/free-solid-svg-icons";
 import { useDndContext, useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { Bookmark, Folder } from "../../../types";
 import FolderCard from "./FolderCard";
+import DragHandle from "./DragHandle";
 
 type SortableFolderCardProps = {
   folder: Folder;
@@ -78,7 +77,7 @@ const SortableFolderCard = ({
         setDropRef(node);
       }}
       style={style}
-      className={`relative rounded-2xl ${
+      className={`relative rounded-2xl w-full break-inside-avoid mb-4 ${
         isBookmarkOver ? "ring-2 ring-indigo-500 bg-indigo-50/50" : ""
       }`}
     >
@@ -96,16 +95,12 @@ const SortableFolderCard = ({
         faviconMap={faviconMap}
         dragHandle={
           editingEnabled ? (
-            <button
-              type="button"
-              aria-label={`Reorder folder ${folder.name}`}
-              ref={setActivatorNodeRef}
-              {...attributes}
-              {...listeners}
-              className="cursor-grab rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 active:cursor-grabbing"
-            >
-              <FontAwesomeIcon icon={faGripVertical} />
-            </button>
+            <DragHandle
+              label={`Reorder folder ${folder.name}`}
+              setActivatorNodeRef={setActivatorNodeRef}
+              attributes={attributes}
+              listeners={listeners}
+            />
           ) : null
         }
       />

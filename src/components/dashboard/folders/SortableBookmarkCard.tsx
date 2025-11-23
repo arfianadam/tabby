@@ -1,9 +1,8 @@
 import { useDndContext, useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGripVertical } from "@fortawesome/free-solid-svg-icons";
 import type { Bookmark } from "../../../types";
 import BookmarkCard from "./BookmarkCard";
+import DragHandle from "./DragHandle";
 
 type SortableBookmarkCardProps = {
   folderId: string;
@@ -70,10 +69,10 @@ const SortableBookmarkCard = ({
         setDropRef(node);
       }}
       style={style}
-      className="relative max-w-90 shrink-0"
+      className="relative h-full"
     >
       {placeBefore && (
-        <div className="absolute -left-2 top-0 bottom-0 w-1 rounded bg-indigo-500 z-20" />
+        <div className="absolute -top-2 left-0 right-0 h-1 rounded bg-indigo-500 z-20" />
       )}
       <BookmarkCard
         folderId={folderId}
@@ -83,21 +82,18 @@ const SortableBookmarkCard = ({
         onDeleteBookmark={onDeleteBookmark}
         dragHandle={
           allowSync ? (
-            <button
-              type="button"
-              className="absolute left-3 top-4 z-10 rounded-full text-slate-300 hover:bg-slate-100 hover:text-slate-500 cursor-grab active:cursor-grabbing h-6 w-6 flex items-center justify-center transition-colors"
-              ref={setActivatorNodeRef}
-              {...attributes}
-              {...listeners}
-              aria-label={`Reorder bookmark ${bookmark.title}`}
-            >
-              <FontAwesomeIcon icon={faGripVertical} className="text-xs" />
-            </button>
+            <DragHandle
+              label={`Reorder bookmark ${bookmark.title}`}
+              setActivatorNodeRef={setActivatorNodeRef}
+              attributes={attributes}
+              listeners={listeners}
+              className="absolute left-2 top-2 z-10"
+            />
           ) : undefined
         }
       />
       {placeAfter && (
-        <div className="absolute -right-2 top-0 bottom-0 w-1 rounded bg-indigo-500 z-20" />
+        <div className="absolute -bottom-2 left-0 right-0 h-1 rounded bg-indigo-500 z-20" />
       )}
     </div>
   );

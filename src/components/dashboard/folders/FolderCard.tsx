@@ -17,6 +17,7 @@ import {
   subtleButtonClasses,
 } from "../constants";
 import FolderBookmarks from "./FolderBookmarks";
+import { getFolderColor } from "../../../utils/colors";
 
 type FolderCardProps = {
   folder: Folder;
@@ -44,6 +45,8 @@ const FolderCard = ({
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(folder.name);
   const [renaming, setRenaming] = useState(false);
+
+  const colors = getFolderColor(folder.name);
 
   useEffect(() => {
     if (!editingName) {
@@ -83,48 +86,58 @@ const FolderCard = ({
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 flex flex-col dark:bg-slate-800/60 dark:border-slate-700">
-      <div className="flex gap-2 items-center justify-between">
-        <div className="flex flex-wrap items-center gap-2 text-slate-900 font-semibold dark:text-slate-100">
+      <div
+        className={`flex gap-2 items-center justify-between p-3 rounded-xl border mb-3 ${colors.bg} ${colors.border}`}
+      >
+        <div
+          className={`flex items-baseline gap-2 font-semibold ${colors.text}`}
+        >
           {dragHandle}
           <FontAwesomeIcon
             icon={faFolderOpen}
-            className="text-indigo-500 dark:text-indigo-400"
+            className={`relative top-0.5 ${colors.icon}`}
           />
-          <span>{folder.name}</span>
-          <span className="flex items-center gap-1 text-xs font-normal text-slate-500 dark:text-slate-400">
-            <FontAwesomeIcon icon={faBookmark} />
-            {bookmarks.length} bookmark
-            {bookmarks.length === 1 ? "" : "s"}
-          </span>
+          <div className="grow shrink">
+            <span>{folder.name}</span>
+            <span
+              className={`inline-flex items-center gap-1 text-xs font-medium ml-2 px-1 py-0.5 rounded-md relative top-px ${colors.badgeBg} ${colors.badgeText}`}
+            >
+              <FontAwesomeIcon icon={faBookmark} />
+              {bookmarks.length}
+            </span>
+          </div>
         </div>
         {allowSync && (
-          <div className="flex items-center flex-wrap gap-2">
+          <div className="flex items-center flex-wrap gap-1">
             <button
               type="button"
-              className={`${subtleButtonClasses} text-indigo-700 hover:text-indigo-800 dark:text-indigo-300 dark:hover:text-indigo-200`}
+              className={`${subtleButtonClasses} ${colors.text} opacity-70 hover:opacity-100`}
               onClick={() => onOpenBookmarkModal(folder.id)}
               disabled={!allowSync}
+              title="Add bookmark"
             >
               <FontAwesomeIcon icon={faPlus} />
             </button>
             {!editingName && (
               <button
                 type="button"
-                className={`${subtleButtonClasses} text-slate-600 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300`}
+                className={`${subtleButtonClasses} ${colors.text} opacity-70 hover:opacity-100`}
                 onClick={() => {
                   setNameDraft(folder.name);
                   setEditingName(true);
                 }}
                 disabled={!allowSync}
+                title="Rename folder"
               >
                 <FontAwesomeIcon icon={faPen} />
               </button>
             )}
             <button
               type="button"
-              className={`${subtleButtonClasses} text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300`}
+              className={`${subtleButtonClasses} text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 opacity-70 hover:opacity-100`}
               onClick={() => onDeleteFolder(folder)}
               disabled={!allowSync}
+              title="Delete folder"
             >
               <FontAwesomeIcon icon={faTrash} />
             </button>
@@ -133,7 +146,7 @@ const FolderCard = ({
       </div>
       {editingName && (
         <form
-          className="mt-3 flex flex-wrap gap-2 items-center"
+          className="mb-3 px-1 flex flex-wrap gap-2 items-center"
           onSubmit={handleRenameSubmit}
         >
           <input
