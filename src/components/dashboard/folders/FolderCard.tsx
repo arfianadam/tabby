@@ -89,103 +89,108 @@ const FolderCard = ({
       <div
         className={`flex gap-2 items-center justify-between p-3 rounded-xl border mb-3 ${colors.bg} ${colors.border}`}
       >
-        <div
-          className={`flex items-baseline gap-2 font-semibold ${colors.text}`}
-        >
-          {dragHandle}
-          <FontAwesomeIcon
-            icon={faFolderOpen}
-            className={`relative top-0.5 ${colors.icon}`}
-          />
-          <div className="grow shrink">
-            <span>{folder.name}</span>
-            <span
-              className={`inline-flex items-center gap-1 text-xs font-medium ml-2 px-1 py-0.5 rounded-md relative top-px ${colors.badgeBg} ${colors.badgeText}`}
-            >
-              <FontAwesomeIcon icon={faBookmark} />
-              {bookmarks.length}
-            </span>
-          </div>
-        </div>
-        {allowSync && (
-          <div className="flex items-center flex-wrap gap-1">
-            <button
-              type="button"
-              className={`${subtleButtonClasses} ${colors.text} opacity-70 hover:opacity-100`}
-              onClick={() => onOpenBookmarkModal(folder.id)}
-              disabled={!allowSync}
-              title="Add bookmark"
-            >
-              <FontAwesomeIcon icon={faPlus} />
-            </button>
-            {!editingName && (
+        {editingName ? (
+          <form
+            className="flex w-full gap-2 items-center"
+            onSubmit={handleRenameSubmit}
+          >
+            <FontAwesomeIcon
+              icon={faFolderOpen}
+              className={`shrink-0 ${colors.icon}`}
+            />
+            <input
+              type="text"
+              value={nameDraft}
+              onChange={(event) => setNameDraft(event.target.value)}
+              className={`${inputClasses} flex-1 min-w-0 py-1 px-2 text-sm`}
+              placeholder="Folder name"
+              autoFocus
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  cancelEditing();
+                }
+              }}
+              disabled={!allowSync || renaming}
+            />
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="submit"
+                className={`${actionButtonClasses} !px-2 !py-1 h-8 w-8 flex items-center justify-center`}
+                disabled={!allowSync || renaming}
+                title="Save"
+              >
+                <FontAwesomeIcon
+                  icon={renaming ? faSpinner : faCheck}
+                  spin={renaming}
+                />
+              </button>
               <button
                 type="button"
-                className={`${subtleButtonClasses} ${colors.text} opacity-70 hover:opacity-100`}
-                onClick={() => {
-                  setNameDraft(folder.name);
-                  setEditingName(true);
-                }}
-                disabled={!allowSync}
-                title="Rename folder"
+                className={`${subtleButtonClasses} !px-2 !py-1 h-8 w-8 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700`}
+                onClick={cancelEditing}
+                disabled={renaming}
+                title="Cancel"
               >
-                <FontAwesomeIcon icon={faPen} />
+                <FontAwesomeIcon icon={faXmark} />
               </button>
+            </div>
+          </form>
+        ) : (
+          <div
+            className={`flex items-baseline gap-2 font-semibold ${colors.text} w-full min-w-0`}
+          >
+            {dragHandle}
+            <FontAwesomeIcon
+              icon={faFolderOpen}
+              className={`relative top-0.5 shrink-0 ${colors.icon}`}
+            />
+            <div className="grow shrink min-w-0 break-words">
+              <span className="mr-2">{folder.name}</span>
+              <span
+                className={`inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-md align-middle ${colors.badgeBg} ${colors.badgeText}`}
+              >
+                <FontAwesomeIcon icon={faBookmark} />
+                {bookmarks.length}
+              </span>
+            </div>
+            {allowSync && (
+              <div className="flex items-center flex-wrap gap-1 shrink-0 ml-1 self-start">
+                <button
+                  type="button"
+                  className={`${subtleButtonClasses} ${colors.text} opacity-70 hover:opacity-100`}
+                  onClick={() => onOpenBookmarkModal(folder.id)}
+                  disabled={!allowSync}
+                  title="Add bookmark"
+                >
+                  <FontAwesomeIcon icon={faPlus} />
+                </button>
+                <button
+                  type="button"
+                  className={`${subtleButtonClasses} ${colors.text} opacity-70 hover:opacity-100`}
+                  onClick={() => {
+                    setNameDraft(folder.name);
+                    setEditingName(true);
+                  }}
+                  disabled={!allowSync}
+                  title="Rename folder"
+                >
+                  <FontAwesomeIcon icon={faPen} />
+                </button>
+                <button
+                  type="button"
+                  className={`${subtleButtonClasses} text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 opacity-70 hover:opacity-100`}
+                  onClick={() => onDeleteFolder(folder)}
+                  disabled={!allowSync}
+                  title="Delete folder"
+                >
+                  <FontAwesomeIcon icon={faTrash} />
+                </button>
+              </div>
             )}
-            <button
-              type="button"
-              className={`${subtleButtonClasses} text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 opacity-70 hover:opacity-100`}
-              onClick={() => onDeleteFolder(folder)}
-              disabled={!allowSync}
-              title="Delete folder"
-            >
-              <FontAwesomeIcon icon={faTrash} />
-            </button>
           </div>
         )}
       </div>
-      {editingName && (
-        <form
-          className="mb-3 px-1 flex flex-wrap gap-2 items-center"
-          onSubmit={handleRenameSubmit}
-        >
-          <input
-            type="text"
-            value={nameDraft}
-            onChange={(event) => setNameDraft(event.target.value)}
-            className={`${inputClasses} flex-1 min-w-[180px]`}
-            placeholder="Folder name"
-            autoFocus
-            onKeyDown={(event) => {
-              if (event.key === "Escape") {
-                event.preventDefault();
-                cancelEditing();
-              }
-            }}
-            disabled={!allowSync || renaming}
-          />
-          <button
-            type="submit"
-            className={`${actionButtonClasses} gap-2`}
-            disabled={!allowSync || renaming}
-          >
-            <FontAwesomeIcon
-              icon={renaming ? faSpinner : faCheck}
-              spin={renaming}
-            />
-            {renaming ? "Saving…" : "Save"}
-          </button>
-          <button
-            type="button"
-            className={`${subtleButtonClasses} gap-2`}
-            onClick={cancelEditing}
-            disabled={renaming}
-          >
-            <FontAwesomeIcon icon={faXmark} />
-            Cancel
-          </button>
-        </form>
-      )}
       <FolderBookmarks
         folderId={folder.id}
         bookmarks={bookmarks}
