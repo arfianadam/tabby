@@ -116,7 +116,7 @@ const FolderCard = ({
             <div className="flex items-center gap-1 shrink-0">
               <button
                 type="submit"
-                className={`${actionButtonClasses} !px-2 !py-1 h-8 w-8 flex items-center justify-center`}
+                className={`${actionButtonClasses} px-2! py-1! h-8 w-8 flex items-center justify-center`}
                 disabled={!allowSync || renaming}
                 title="Save"
               >
@@ -127,7 +127,7 @@ const FolderCard = ({
               </button>
               <button
                 type="button"
-                className={`${subtleButtonClasses} !px-2 !py-1 h-8 w-8 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700`}
+                className={`${subtleButtonClasses} px-2! py-1! h-8 w-8 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700`}
                 onClick={cancelEditing}
                 disabled={renaming}
                 title="Cancel"
@@ -145,7 +145,7 @@ const FolderCard = ({
               icon={faFolderOpen}
               className={`relative top-0.5 shrink-0 ${colors.icon}`}
             />
-            <div className="grow shrink min-w-0 break-words">
+            <div className="grow shrink min-w-0 wrap-break-word">
               <span className="mr-2">{folder.name}</span>
               <span
                 className={`inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-md align-middle ${colors.badgeBg} ${colors.badgeText}`}
