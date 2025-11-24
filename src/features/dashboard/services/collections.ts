@@ -9,8 +9,8 @@ import {
   setDoc,
   type FirestoreError,
 } from "firebase/firestore";
-import { db } from "../firebase/client";
-import type { Bookmark, BookmarkDraft, Collection, Folder } from "../types";
+import { db } from "@/firebase/client";
+import type { Bookmark, BookmarkDraft, Collection, Folder } from "@/types";
 
 type CollectionSnapshot = {
   id?: string;
@@ -72,13 +72,30 @@ export const subscribeToCollections = (
   onError?: (error: FirestoreError) => void,
 ) => {
   const q = query(userCollectionsRef(uid), orderBy("createdAt", "asc"));
+  const collectionCache = new Map<string, Collection>();
+
   return onSnapshot(
     q,
     (snapshot) => {
-      const data = snapshot.docs.map((docSnapshot) =>
-        normalizeCollection(docSnapshot.id, docSnapshot.data()),
-      );
-      onChange(data);
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "removed") {
+          collectionCache.delete(change.doc.id);
+        } else {
+          const normalized = normalizeCollection(
+            change.doc.id,
+            change.doc.data(),
+          );
+          collectionCache.set(change.doc.id, normalized);
+        }
+      });
+
+      const nextCollections = snapshot.docs.map((doc) => {
+        return (
+          collectionCache.get(doc.id) ?? normalizeCollection(doc.id, doc.data())
+        );
+      });
+
+      onChange(nextCollections);
     },
     (err) => {
       onError?.(err);

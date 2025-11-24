@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import {
   getInitialBookmarkFormState,
   type BookmarkFormState,
-} from "../../components/dashboard/types";
-import type { Bookmark } from "../../types";
+} from "../components/types";
+import type { Bookmark } from "@/types";
 
 export const useBookmarkModalState = (selectedCollectionId: string | null) => {
   const [bookmarkModalFolderId, setBookmarkModalFolderId] = useState<

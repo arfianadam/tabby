@@ -1,11 +1,11 @@
-import { hasCryptoSupport } from "./environment";
+import { hasCryptoSupport } from "@/utils/cache/environment";
 import {
   createEncryptionContext,
   getEncryptionContext,
   setEncryptionContext,
-} from "./crypto";
-import { resetUserPayloadCache } from "./userCache";
-import { resetCollectionsPayloadCache } from "./collectionsCache";
+} from "@/utils/cache/crypto";
+import { resetUserPayloadCache } from "@/utils/cache/userCache";
+import { resetCollectionsPayloadCache } from "@/utils/cache/collectionsCache";
 
 export const configureCacheEncryption = async (
   uid: string | null,

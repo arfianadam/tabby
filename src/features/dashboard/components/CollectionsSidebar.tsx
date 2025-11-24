@@ -17,7 +17,7 @@ import {
   faArrowRightFromBracket,
 } from "@fortawesome/free-solid-svg-icons";
 import { useState, useEffect } from "react";
-import type { Collection } from "../../types";
+import type { Collection } from "@/types";
 import type { DashboardUser } from "./types";
 import {
   actionButtonClasses,
@@ -26,17 +26,15 @@ import {
   panelClass,
   subtleButtonClasses,
 } from "./constants";
-import { useDarkMode } from "../../hooks/useDarkMode";
+import { useDarkMode } from "@/hooks/useDarkMode";
 
 type CollectionsSidebarProps = {
   allowSync: boolean;
   editMode: boolean;
   collections: Collection[];
   selectedCollectionId: string | null;
-  newCollection: string;
-  onNewCollectionChange: (value: string) => void;
   creatingCollection: boolean;
-  onCreateCollection: (event: React.FormEvent<HTMLFormElement>) => void;
+  onCreateCollection: (name: string) => void;
   onSelectCollection: (collectionId: string) => void;
   onDeleteCollection: (collection: Collection) => void;
   noCollections: boolean;
@@ -51,8 +49,6 @@ const CollectionsSidebar = ({
   editMode,
   collections,
   selectedCollectionId,
-  newCollection,
-  onNewCollectionChange,
   creatingCollection,
   onCreateCollection,
   onSelectCollection,
@@ -67,6 +63,7 @@ const CollectionsSidebar = ({
     const saved = localStorage.getItem("tabby-sidebar-collapsed");
     return saved ? JSON.parse(saved) : false;
   });
+  const [newCollection, setNewCollection] = useState("");
 
   useEffect(() => {
     localStorage.setItem(
@@ -80,6 +77,12 @@ const CollectionsSidebar = ({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleCreateSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onCreateCollection(newCollection);
+    setNewCollection("");
+  };
 
   const sidebarButtonClasses = `${subtleButtonClasses.replace("transition", "")} ${
     mounted ? "transition" : ""
@@ -129,7 +132,7 @@ const CollectionsSidebar = ({
 
       {/* Create Collection (only visible when expanded) */}
       {canEdit && !isCollapsed && (
-        <form className="space-y-2 mb-4" onSubmit={onCreateCollection}>
+        <form className="space-y-2 mb-4" onSubmit={handleCreateSubmit}>
           <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap overflow-hidden">
             <FontAwesomeIcon icon={faFolderPlus} className="text-slate-400" />
             Create collection
@@ -139,7 +142,7 @@ const CollectionsSidebar = ({
               type="text"
               placeholder="New collection"
               value={newCollection}
-              onChange={(event) => onNewCollectionChange(event.target.value)}
+              onChange={(event) => setNewCollection(event.target.value)}
               className={inputClasses}
               disabled={!canEdit}
             />

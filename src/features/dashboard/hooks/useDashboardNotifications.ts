@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Banner, BannerTone } from "../../components/dashboard/types";
+import type { Banner, BannerTone } from "../components/types";
 
 export const useDashboardNotifications = (allowSync: boolean) => {
   const [banner, setBanner] = useState<Banner | null>(null);

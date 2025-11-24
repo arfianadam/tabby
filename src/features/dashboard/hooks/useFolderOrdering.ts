@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Bookmark, Folder } from "../../types";
-import { arraysMatch } from "../../utils/arrays";
+import type { Bookmark, Folder } from "@/types";
+import { arraysMatch } from "@/utils/arrays";
 
 export const useFolderOrdering = (folders: Folder[]) => {
   const folderIds = useMemo(

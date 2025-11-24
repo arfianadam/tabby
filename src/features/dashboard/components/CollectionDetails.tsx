@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import {
   DndContext,
   type DragEndEvent,
@@ -11,25 +11,16 @@ import {
   type CollisionDetection,
 } from "@dnd-kit/core";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faFolder,
-  faPlus,
-  faSpinner,
-  faTrash,
-} from "@fortawesome/free-solid-svg-icons";
-import type { Bookmark, Collection, Folder } from "../../types";
+import { faFolder, faTrash } from "@fortawesome/free-solid-svg-icons";
+import type { Bookmark, Collection, Folder } from "@/types";
 import type { BookmarkFormState } from "./types";
-import type { BrowserTab } from "../../utils/chrome";
-import { useBookmarkFavicons } from "../../hooks/useBookmarkFavicons";
-import { useFolderOrdering } from "../../hooks/dashboard/useFolderOrdering";
-import {
-  actionButtonClasses,
-  inputClasses,
-  panelClass,
-  subtleButtonClasses,
-} from "./constants";
+import type { BrowserTab } from "@/utils/chrome";
+import { useBookmarkFavicons } from "@/hooks/useBookmarkFavicons";
+import { useFolderOrdering } from "../hooks/useFolderOrdering";
+import { panelClass, subtleButtonClasses } from "./constants";
 import AddBookmarkModal from "./AddBookmarkModal";
 import SortableFolderCard from "./folders/SortableFolderCard";
+import CreateFolderForm from "./CreateFolderForm";
 
 const collisionDetectionStrategy: CollisionDetection = (args) => {
   const { active, droppableContainers } = args;
@@ -109,10 +100,8 @@ type CollectionDetailsProps = {
   allowSync: boolean;
   editMode: boolean;
   onDeleteCollection: (collection: Collection) => void;
-  newFolder: string;
-  onNewFolderChange: (value: string) => void;
   creatingFolder: boolean;
-  onCreateFolder: (event: React.FormEvent<HTMLFormElement>) => void;
+  onCreateFolder: (name: string) => void;
   onDeleteFolder: (folder: Folder) => void;
   onRenameFolder: (folder: Folder, name: string) => Promise<boolean>;
   onOpenBookmarkModal: (folderId: string) => void;
@@ -140,14 +129,14 @@ type CollectionDetailsProps = {
   onEditBookmark: (folderId: string, bookmark: Bookmark) => void;
 };
 
-const CollectionDetails = (props: CollectionDetailsProps) => {
+const CollectionDetails = memo(function CollectionDetails(
+  props: CollectionDetailsProps,
+) {
   const {
     collection,
     allowSync,
     editMode,
     onDeleteCollection,
-    newFolder,
-    onNewFolderChange,
     creatingFolder,
     onCreateFolder,
     onDeleteFolder,
@@ -175,6 +164,7 @@ const CollectionDetails = (props: CollectionDetailsProps) => {
       activationConstraint: { distance: 6 },
     }),
   );
+
   const activeBookmarkFolder =
     collection.folders.find((folder) => folder.id === bookmarkModalFolderId) ??
     null;
@@ -269,36 +259,11 @@ const CollectionDetails = (props: CollectionDetailsProps) => {
           )}
         </div>
         {editingEnabled && (
-          <form className="space-y-1" onSubmit={onCreateFolder}>
-            <label className="flex flex-col gap-1 text-sm font-medium uppercase text-slate-700 dark:text-slate-300">
-              New folder
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Ex: Launch inspiration"
-                  value={newFolder}
-                  disabled={!collection || !editingEnabled}
-                  onChange={(event) => onNewFolderChange(event.target.value)}
-                  className={`${inputClasses} ${
-                    !collection || !editingEnabled
-                      ? "cursor-not-allowed opacity-60"
-                      : ""
-                  }`}
-                />
-                <button
-                  type="submit"
-                  disabled={creatingFolder || !collection || !editingEnabled}
-                  className={`${actionButtonClasses} gap-2`}
-                >
-                  <FontAwesomeIcon
-                    icon={creatingFolder ? faSpinner : faPlus}
-                    spin={creatingFolder}
-                  />
-                  {creatingFolder ? "Adding…" : "Add"}
-                </button>
-              </div>
-            </label>
-          </form>
+          <CreateFolderForm
+            onCreateFolder={onCreateFolder}
+            creatingFolder={creatingFolder}
+            disabled={!collection || !editingEnabled}
+          />
         )}
         <div className="grow flex flex-col gap-4 overflow-hidden">
           {collection.folders.length === 0 ? (
@@ -353,6 +318,6 @@ const CollectionDetails = (props: CollectionDetailsProps) => {
       />
     </section>
   );
-};
+});
 
 export default CollectionDetails;

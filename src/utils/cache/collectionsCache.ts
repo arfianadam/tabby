@@ -1,6 +1,6 @@
-import type { Collection } from "../../types";
-import { decryptPayload, encryptPayload } from "./crypto";
-import { readPersistedValue, writePersistedValue } from "./storage";
+import type { Collection } from "@/types";
+import { decryptPayload, encryptPayload } from "@/utils/cache/crypto";
+import { readPersistedValue, writePersistedValue } from "@/utils/cache/storage";
 
 const collectionsKey = (uid: string) => `tabby:collections:${uid}`;
 const collectionsPayloadCache = new Map<string, string>();

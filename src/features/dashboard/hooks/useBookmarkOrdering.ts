@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Bookmark } from "../../types";
-import { arraysMatch } from "../../utils/arrays";
+import type { Bookmark } from "@/types";
+import { arraysMatch } from "@/utils/arrays";
 
 export const useBookmarkOrdering = (bookmarks: Bookmark[]) => {
   const bookmarkIds = useMemo(

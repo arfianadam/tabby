@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Collection } from "../../types";
+import type { Collection } from "@/types";
 
 export const useSelectedCollection = (collections: Collection[]) => {
   const [selectedCollectionId, setSelectedCollectionId] = useState<

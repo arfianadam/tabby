@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import type { Bookmark } from "../types";
-import { useFavicons } from "./useFavicons";
+import type { Bookmark } from "@/types";
+import { useFavicons } from "@/hooks/useFavicons";
 
 export const useBookmarkFavicons = (bookmarks: Bookmark[]) => {
   const targets = useMemo(

@@ -1,4 +1,4 @@
-import { hasCryptoSupport, hasWindow } from "./environment";
+import { hasCryptoSupport, hasWindow } from "@/utils/cache/environment";
 
 const ENCRYPTION_SALT = "tabby:cache:v1";
 const IV_BYTE_LENGTH = 12;

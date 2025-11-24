@@ -1,6 +1,7 @@
+import { memo } from "react";
 import { useDndContext, useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import type { Bookmark, Folder } from "../../../types";
+import type { Bookmark, Folder } from "@/types";
 import FolderCard from "./FolderCard";
 import DragHandle from "./DragHandle";
 
@@ -18,7 +19,7 @@ type SortableFolderCardProps = {
   onEditBookmark: (folderId: string, bookmark: Bookmark) => void;
 };
 
-const SortableFolderCard = ({
+const SortableFolderCard = memo(function SortableFolderCard({
   folder,
   bookmarks,
   allowSync,
@@ -30,7 +31,7 @@ const SortableFolderCard = ({
   onDeleteBookmark,
   faviconMap,
   onEditBookmark,
-}: SortableFolderCardProps) => {
+}: SortableFolderCardProps) {
   const { active } = useDndContext();
   const {
     attributes,
@@ -112,6 +113,6 @@ const SortableFolderCard = ({
       )}
     </div>
   );
-};
+});
 
 export default SortableFolderCard;

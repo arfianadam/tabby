@@ -1,6 +1,6 @@
 import { useDndContext, useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import type { Bookmark } from "../../../types";
+import type { Bookmark } from "@/types";
 import BookmarkCard from "./BookmarkCard";
 import DragHandle from "./DragHandle";
 

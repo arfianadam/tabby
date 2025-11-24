@@ -7,12 +7,12 @@ import {
   faSpinner,
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
-import type { Folder } from "../../types";
+import type { Folder } from "@/types";
 import type { BookmarkFormState } from "./types";
 import { actionButtonClasses, inputClasses } from "./constants";
-import { getCurrentWindowTabs } from "../../utils/chrome";
-import type { BrowserTab } from "../../utils/chrome";
-import { useFavicons } from "../../hooks/useFavicons";
+import { getCurrentWindowTabs } from "@/utils/chrome";
+import type { BrowserTab } from "@/utils/chrome";
+import { useFavicons } from "@/hooks/useFavicons";
 
 type AddBookmarkModalProps = {
   folder: Folder | null;

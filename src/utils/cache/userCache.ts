@@ -3,8 +3,8 @@ import {
   encryptPayload,
   getEncryptionContext,
   isEncryptionConfigured,
-} from "./crypto";
-import { readPersistedValue, writePersistedValue } from "./storage";
+} from "@/utils/cache/crypto";
+import { readPersistedValue, writePersistedValue } from "@/utils/cache/storage";
 
 export type CachedUser = {
   uid: string;

@@ -1,4 +1,10 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import {
+  memo,
+  useEffect,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBookmark,
@@ -10,14 +16,14 @@ import {
   faTrash,
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
-import type { Bookmark, Folder } from "../../../types";
+import type { Bookmark, Folder } from "@/types";
 import {
   actionButtonClasses,
   inputClasses,
   subtleButtonClasses,
 } from "../constants";
 import FolderBookmarks from "./FolderBookmarks";
-import { getFolderColor } from "../../../utils/colors";
+import { getFolderColor } from "@/utils/colors";
 
 type FolderCardProps = {
   folder: Folder;
@@ -32,7 +38,7 @@ type FolderCardProps = {
   dragHandle?: ReactNode;
 };
 
-const FolderCard = ({
+const FolderCard = memo(function FolderCard({
   folder,
   bookmarks,
   allowSync,
@@ -43,7 +49,7 @@ const FolderCard = ({
   faviconMap,
   onEditBookmark,
   dragHandle,
-}: FolderCardProps) => {
+}: FolderCardProps) {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(folder.name);
   const [renaming, setRenaming] = useState(false);
@@ -205,6 +211,6 @@ const FolderCard = ({
       />
     </article>
   );
-};
+});
 
 export default FolderCard;

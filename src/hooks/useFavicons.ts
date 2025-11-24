@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   fetchAndCacheFavicon,
   getCachedFaviconDataUrl,
-} from "../utils/favicons";
+} from "@/utils/favicons";
 
 export type FaviconTarget = {
   id: string;

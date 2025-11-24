@@ -1,6 +1,6 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPen, faTrash } from "@fortawesome/free-solid-svg-icons";
-import type { Bookmark } from "../../../types";
+import type { Bookmark } from "@/types";
 import { dangerGhostButtonClasses } from "../constants";
 
 type BookmarkCardProps = {

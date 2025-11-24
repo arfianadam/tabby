@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import type { Collection } from "../types";
-import { getCachedCollections } from "../utils/cache/collectionsCache";
+import type { Collection } from "@/types";
+import { getCachedCollections } from "@/utils/cache/collectionsCache";
 
 export const useCachedCollections = (
   uid: string | null,

@@ -1,8 +1,8 @@
 import type { FirestoreError } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
-import type { Collection } from "../types";
-import { subscribeToCollections } from "../services/collections";
-import { setCachedCollections } from "../utils/cache/collectionsCache";
+import type { Collection } from "@/types";
+import { subscribeToCollections } from "@/features/dashboard/services/collections";
+import { setCachedCollections } from "@/utils/cache/collectionsCache";
 
 type UseCollectionsOptions = {
   initialData?: Collection[];
@@ -28,7 +28,7 @@ export const useCollections = (
     setLoading(true);
     const unsubscribe = subscribeToCollections(
       uid,
-      (nextCollections) => {
+      (nextCollections: Collection[]) => {
         setCollections(nextCollections);
         setLoading(false);
         if (cacheKey) {
@@ -37,7 +37,7 @@ export const useCollections = (
           });
         }
       },
-      (err) => {
+      (err: FirestoreError) => {
         setError(err);
         setLoading(false);
       },

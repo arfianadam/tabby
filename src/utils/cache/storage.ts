@@ -1,4 +1,4 @@
-import { hasIndexedDbSupport, hasWindow } from "./environment";
+import { hasIndexedDbSupport, hasWindow } from "@/utils/cache/environment";
 
 const safeLocalStorageGet = (key: string) => {
   if (!hasWindow()) {
