@@ -140,24 +140,26 @@ const FolderCard = ({
           </form>
         ) : (
           <div
-            className={`flex items-baseline gap-2 font-semibold ${colors.text} w-full min-w-0`}
+            className={`flex items-center gap-2 font-semibold ${colors.text} w-full min-w-0`}
           >
             {dragHandle}
             <FontAwesomeIcon
               icon={faFolderOpen}
-              className={`relative top-0.5 shrink-0 ${colors.icon}`}
+              className={`shrink-0 ${colors.icon}`}
             />
-            <div className="grow shrink min-w-0 wrap-break-word">
-              <span className="mr-2">{folder.name}</span>
+            <span className="flex-1 wrap-break-word line-clamp-1">
+              {folder.name}
+            </span>
+            {!allowSync && (
               <span
                 className={`inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-md align-middle ${colors.badgeBg} ${colors.badgeText}`}
               >
                 <FontAwesomeIcon icon={faBookmark} />
                 {bookmarks.length}
               </span>
-            </div>
+            )}
             {allowSync && (
-              <div className="flex items-center flex-wrap gap-1 shrink-0 ml-1 self-start">
+              <div className="flex items-center flex-wrap gap-1 shrink-0">
                 <button
                   type="button"
                   className={`${subtleButtonClasses} ${colors.text} opacity-70 hover:opacity-100`}
