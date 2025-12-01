@@ -80,7 +80,7 @@ const SortableFolderCard = memo(function SortableFolderCard({
         setDropRef(node);
       }}
       style={style}
-      className={`relative rounded-2xl w-full break-inside-avoid mb-4 ${
+      className={`relative rounded-2xl w-105 shrink-0 break-inside-avoid mb-4 ${
         isBookmarkOver ? "ring-2 ring-indigo-500 bg-indigo-50/50" : ""
       }`}
     >

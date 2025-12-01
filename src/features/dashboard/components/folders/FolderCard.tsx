@@ -93,7 +93,7 @@ const FolderCard = memo(function FolderCard({
   };
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 flex flex-col dark:bg-slate-800/60 dark:border-slate-700">
+    <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-2 flex flex-col dark:bg-slate-800/60 dark:border-slate-700">
       <div
         className={`flex gap-2 items-center justify-between p-3 rounded-xl border mb-3 ${colors.bg} ${colors.border}`}
       >
@@ -153,7 +153,7 @@ const FolderCard = memo(function FolderCard({
               icon={faFolderOpen}
               className={`shrink-0 ${colors.icon}`}
             />
-            <span className="flex-1 wrap-break-word line-clamp-1">
+            <span className="text-lg flex-1 wrap-break-word line-clamp-1">
               {folder.name}
             </span>
             {!allowSync && (

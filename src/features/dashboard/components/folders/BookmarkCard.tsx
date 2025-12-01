@@ -33,7 +33,7 @@ const BookmarkCard = ({
       <a
         href={bookmark.url}
         target="_self"
-        className={`block h-full rounded-2xl p-3 ${
+        className={`block h-full rounded-2xl p-2 ${
           allowSync ? "pr-20 pl-10" : "pr-3.5"
         } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-indigo-800 dark:focus-visible:ring-offset-slate-800`}
       >
