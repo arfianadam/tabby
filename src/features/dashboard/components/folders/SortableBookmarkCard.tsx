@@ -90,7 +90,7 @@ const SortableBookmarkCard = ({
               setActivatorNodeRef={setActivatorNodeRef}
               attributes={attributes}
               listeners={listeners}
-              className="absolute left-2 top-2 z-10"
+              className="absolute left-2 top-1.25 z-10"
             />
           ) : undefined
         }

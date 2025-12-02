@@ -59,7 +59,7 @@ const BookmarkCard = ({
       </a>
       {dragHandle}
       {allowSync && (
-        <div className="absolute right-2 top-2 z-10 flex items-center gap-1">
+        <div className="absolute right-2 top-1.5 z-10 flex items-center gap-1">
           <button
             className="h-7 w-7 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
             type="button"
