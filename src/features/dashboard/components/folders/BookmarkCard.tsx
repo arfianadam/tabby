@@ -29,7 +29,7 @@ const BookmarkCard = ({
   })();
 
   return (
-    <article className="relative group rounded-2xl border border-slate-200 bg-white transition-colors hover:border-indigo-200 focus-within:border-indigo-200 w-full h-full dark:bg-slate-800 dark:border-slate-700 dark:hover:border-indigo-800">
+    <article className="relative group rounded-2xl border border-slate-200 bg-white transition-colors hover:border-indigo-200 focus-within:border-indigo-200 dark:bg-slate-800 dark:border-slate-700 dark:hover:border-indigo-800">
       <a
         href={bookmark.url}
         target="_self"

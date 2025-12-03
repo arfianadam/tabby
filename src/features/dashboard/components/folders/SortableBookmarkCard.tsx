@@ -3,6 +3,7 @@ import { CSS } from "@dnd-kit/utilities";
 import type { Bookmark } from "@/types";
 import BookmarkCard from "./BookmarkCard";
 import DragHandle from "./DragHandle";
+import { useEffect, useRef } from "react";
 
 type SortableBookmarkCardProps = {
   folderId: string;
@@ -23,7 +24,7 @@ const SortableBookmarkCard = ({
   onDeleteBookmark,
   onEditBookmark,
 }: SortableBookmarkCardProps) => {
-  const { active } = useDndContext();
+  const { active, over } = useDndContext();
   const {
     attributes,
     listeners,
@@ -31,6 +32,7 @@ const SortableBookmarkCard = ({
     setActivatorNodeRef,
     transform,
     isDragging,
+    node,
   } = useDraggable({
     id: bookmark.id,
     data: { type: "bookmark", folderId, bookmark, index },
@@ -43,12 +45,16 @@ const SortableBookmarkCard = ({
     disabled: !allowSync,
   });
 
-  const style = {
-    transform: CSS.Translate.toString(transform),
-    zIndex: isDragging ? 5 : undefined,
-    opacity: isDragging ? 0.5 : 1,
-    pointerEvents: isDragging ? "none" : undefined,
-  } as React.CSSProperties;
+  // Store the initial rect before dragging starts
+  const initialRectRef = useRef<DOMRect | null>(null);
+
+  useEffect(() => {
+    if (isDragging && !initialRectRef.current) {
+      initialRectRef.current = node.current?.getBoundingClientRect() ?? null;
+    } else if (!isDragging) {
+      initialRectRef.current = null;
+    }
+  }, [isDragging, node]);
 
   const isSameFolder =
     active?.data.current?.type === "bookmark" &&
@@ -64,6 +70,35 @@ const SortableBookmarkCard = ({
   // For cross-folder drag, default to placing before (insert at current index)
   const placeBefore = showPlaceholder && (!isSameFolder || dragIndex > index);
 
+  // Adjust transform Y based on position relative to the hovered element
+  // Use the initial rect (before dragging) for stable position comparison
+  // Only adjust when over a bookmark in the same folder
+  const initialRect = initialRectRef.current;
+  const overRect = over?.rect;
+  const isOverBookmark = over?.data.current?.type === "bookmark";
+  const isOverSameFolder = over?.data.current?.folderId === folderId;
+  const isOverDifferent = over?.id !== bookmark.id;
+  const shouldAdjustTransform =
+    isOverBookmark && isOverSameFolder && isOverDifferent;
+  const isAboveOver =
+    shouldAdjustTransform &&
+    initialRect &&
+    overRect &&
+    initialRect.top > overRect.top;
+  const adjustedTransform = transform
+    ? {
+        ...transform,
+        y: transform.y - (isAboveOver ? (overRect?.height ?? 0) : 0),
+      }
+    : null;
+
+  const style = {
+    transform: CSS.Translate.toString(adjustedTransform),
+    zIndex: isDragging ? 5 : undefined,
+    opacity: isDragging ? 0.5 : 1,
+    pointerEvents: isDragging ? "none" : undefined,
+  } as React.CSSProperties;
+
   return (
     <div
       ref={(node) => {
@@ -71,10 +106,10 @@ const SortableBookmarkCard = ({
         setDropRef(node);
       }}
       style={style}
-      className="relative h-full"
+      className="py-1.5"
     >
       {placeBefore && (
-        <div className="absolute -top-2 left-0 right-0 h-1 rounded bg-indigo-500 z-20" />
+        <div className="h-10 rounded-2xl border-2 border-dashed border-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/20 mb-3" />
       )}
       <BookmarkCard
         folderId={folderId}
@@ -96,7 +131,7 @@ const SortableBookmarkCard = ({
         }
       />
       {placeAfter && (
-        <div className="absolute -bottom-2 left-0 right-0 h-1 rounded bg-indigo-500 z-20" />
+        <div className="h-10 rounded-2xl border-2 border-dashed border-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/20 mt-3" />
       )}
     </div>
   );

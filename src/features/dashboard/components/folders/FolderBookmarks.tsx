@@ -19,7 +19,7 @@ const FolderBookmarks = ({
   onEditBookmark,
 }: FolderBookmarksProps) => {
   return (
-    <div className="mt-3">
+    <div>
       {bookmarks.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500 text-sm dark:border-slate-700 dark:text-slate-400">
           <p>
@@ -29,7 +29,7 @@ const FolderBookmarks = ({
           </p>
         </div>
       ) : (
-        <div className="grid gap-3 grid-cols-1">
+        <div className="grid grid-cols-1">
           {bookmarks.map((bookmark, index) => (
             <SortableBookmarkCard
               key={bookmark.id}

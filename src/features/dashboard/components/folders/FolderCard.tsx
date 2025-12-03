@@ -95,7 +95,7 @@ const FolderCard = memo(function FolderCard({
   return (
     <article className="rounded-2xl border border-slate-200 bg-slate-50/60 p-2 flex flex-col dark:bg-slate-800/60 dark:border-slate-700">
       <div
-        className={`flex gap-2 items-center justify-between p-3 rounded-xl border mb-3 ${colors.bg} ${colors.border}`}
+        className={`flex gap-2 items-center justify-between p-3 rounded-xl border mb-1.5 ${colors.bg} ${colors.border}`}
       >
         {editingName ? (
           <form
