@@ -25,13 +25,20 @@ const generateId = () =>
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2, 11);
 
-const normalizeBookmark = (bookmark: Partial<Bookmark>): Bookmark => ({
-  id: bookmark.id ?? generateId(),
-  title: (bookmark.title ?? "").trim() || "Untitled bookmark",
-  url: bookmark.url ?? "",
-  note: bookmark.note?.trim() || "",
-  createdAt: bookmark.createdAt ?? Date.now(),
-});
+const normalizeBookmark = (bookmark: Partial<Bookmark>): Bookmark => {
+  const base: Bookmark = {
+    id: bookmark.id ?? generateId(),
+    title: (bookmark.title ?? "").trim() || "Untitled bookmark",
+    url: bookmark.url ?? "",
+    note: bookmark.note?.trim() || "",
+    createdAt: bookmark.createdAt ?? Date.now(),
+  };
+  const faviconUrl = bookmark.faviconUrl?.trim();
+  if (faviconUrl) {
+    base.faviconUrl = faviconUrl;
+  }
+  return base;
+};
 
 const normalizeFolder = (folder: Partial<Folder>): Folder => ({
   id: folder.id ?? generateId(),
@@ -209,13 +216,20 @@ const normalizeUrl = (url: string) => {
   return `https://${trimmed}`;
 };
 
-const createBookmarkFromDraft = (draft: BookmarkDraft): Bookmark => ({
-  id: generateId(),
-  title: draft.title.trim() || draft.url,
-  url: normalizeUrl(draft.url),
-  note: draft.note?.trim() || "",
-  createdAt: Date.now(),
-});
+const createBookmarkFromDraft = (draft: BookmarkDraft): Bookmark => {
+  const base: Bookmark = {
+    id: generateId(),
+    title: draft.title.trim() || draft.url,
+    url: normalizeUrl(draft.url),
+    note: draft.note?.trim() || "",
+    createdAt: Date.now(),
+  };
+  const faviconUrl = draft.faviconUrl?.trim();
+  if (faviconUrl) {
+    base.faviconUrl = faviconUrl;
+  }
+  return base;
+};
 
 export const addBookmarksToFolder = async (
   uid: string,
@@ -276,13 +290,23 @@ export const updateBookmarkInFolder = async (
           return bookmark;
         }
         bookmarkFound = true;
-        return {
+        const updated: Bookmark = {
           ...bookmark,
           title:
             (payload.title ?? bookmark.title).trim() || "Untitled bookmark",
           url: normalizeUrl(payload.url ?? bookmark.url),
           note: (payload.note ?? bookmark.note ?? "").trim(),
         };
+        // Handle faviconUrl: only set if non-empty, delete if cleared
+        if (payload.faviconUrl !== undefined) {
+          const trimmedFaviconUrl = payload.faviconUrl.trim();
+          if (trimmedFaviconUrl) {
+            updated.faviconUrl = trimmedFaviconUrl;
+          } else {
+            delete updated.faviconUrl;
+          }
+        }
+        return updated;
       });
 
       return {

@@ -122,29 +122,45 @@ const encodeGstatic = (target: string) =>
     target,
   )}`;
 
-const buildFaviconSources = (url: string): string[] => {
-  const sources: string[] = [];
+const buildSourcesForUrl = (url: string): string[] => {
   const trimmed = url.trim();
   if (!trimmed) {
-    return sources;
+    return [];
   }
-
   try {
     const parsed = new URL(trimmed);
     const origin = `${parsed.protocol}//${parsed.hostname}`;
-    sources.push(encodeS2(origin), encodeGstatic(origin));
+    return [encodeS2(origin), encodeGstatic(origin)];
   } catch {
-    sources.push(encodeS2(trimmed), encodeGstatic(trimmed));
+    return [encodeS2(trimmed), encodeGstatic(trimmed)];
   }
+};
+
+const buildFaviconSources = (url: string, customUrl?: string): string[] => {
+  const sources: string[] = [];
+
+  // Try custom URL first if provided
+  if (customUrl) {
+    sources.push(...buildSourcesForUrl(customUrl));
+  }
+
+  // Fall back to main URL
+  sources.push(...buildSourcesForUrl(url));
 
   return sources;
 };
 
-const downloadFavicon = async (url: string): Promise<string | null> => {
-  if (!/^https?:\/\//i.test(url)) {
+const downloadFavicon = async (
+  url: string,
+  customUrl?: string,
+): Promise<string | null> => {
+  // At least one URL must be valid
+  const hasValidUrl = /^https?:\/\//i.test(url);
+  const hasValidCustomUrl = customUrl && /^https?:\/\//i.test(customUrl);
+  if (!hasValidUrl && !hasValidCustomUrl) {
     return null;
   }
-  const sources = buildFaviconSources(url);
+  const sources = buildFaviconSources(url, customUrl);
   for (const source of sources) {
     try {
       const response = await fetch(source, {
@@ -167,22 +183,36 @@ const downloadFavicon = async (url: string): Promise<string | null> => {
 
 export const fetchAndCacheFavicon = async (
   url: string,
+  customUrl?: string,
 ): Promise<string | null> => {
-  if (!url) {
+  if (!url && !customUrl) {
     return null;
   }
-  const existing = getCachedFaviconDataUrl(url);
-  if (existing) {
-    return existing;
+
+  // Check cache for custom URL first, then main URL
+  if (customUrl) {
+    const cachedCustom = getCachedFaviconDataUrl(customUrl);
+    if (cachedCustom) {
+      return cachedCustom;
+    }
   }
-  const cacheKey = getCacheKey(url);
+  if (url) {
+    const cachedMain = getCachedFaviconDataUrl(url);
+    if (cachedMain) {
+      return cachedMain;
+    }
+  }
+
+  // Use main URL as cache key (fallback to custom if main is empty)
+  const cacheKey = getCacheKey(url || customUrl!);
   if (!inflightFetches.has(cacheKey)) {
     inflightFetches.set(
       cacheKey,
       (async () => {
-        const dataUrl = await downloadFavicon(url);
+        const dataUrl = await downloadFavicon(url, customUrl);
         if (dataUrl) {
-          persistCacheEntry(url, dataUrl);
+          // Cache under main URL if available, otherwise custom URL
+          persistCacheEntry(url || customUrl!, dataUrl);
         }
         return dataUrl;
       })(),

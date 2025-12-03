@@ -42,6 +42,7 @@ export const useBookmarkModalState = (selectedCollectionId: string | null) => {
         title: bookmark.title,
         url: bookmark.url,
         note: bookmark.note ?? "",
+        faviconUrl: bookmark.faviconUrl ?? "",
       });
     },
     [],

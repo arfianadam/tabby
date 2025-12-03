@@ -3,6 +3,7 @@ export interface Bookmark {
   title: string;
   url: string;
   note?: string;
+  faviconUrl?: string;
   createdAt: number;
 }
 
@@ -23,4 +24,5 @@ export interface Collection {
 
 export type BookmarkDraft = Pick<Bookmark, "title" | "url"> & {
   note?: string;
+  faviconUrl?: string;
 };

@@ -17,6 +17,7 @@ export type BookmarkFormState = {
   title: string;
   url: string;
   note: string;
+  faviconUrl: string;
 };
 
 export type DashboardUser = {
@@ -28,4 +29,5 @@ export const getInitialBookmarkFormState = (): BookmarkFormState => ({
   title: "",
   url: "",
   note: "",
+  faviconUrl: "",
 });

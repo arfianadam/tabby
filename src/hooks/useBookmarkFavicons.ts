@@ -8,6 +8,7 @@ export const useBookmarkFavicons = (bookmarks: Bookmark[]) => {
       bookmarks.map((bookmark) => ({
         id: bookmark.id,
         url: bookmark.url,
+        faviconUrl: bookmark.faviconUrl,
       })),
     [bookmarks],
   );

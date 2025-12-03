@@ -239,6 +239,27 @@ const AddBookmarkModal = ({
                   disabled={!allowSync}
                 />
               </label>
+              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 dark:text-slate-300">
+                <span className="flex items-center gap-2">
+                  Custom favicon URL
+                  <span className="text-xs font-normal text-slate-400 dark:text-slate-500">
+                    (optional)
+                  </span>
+                </span>
+                <input
+                  type="url"
+                  value={bookmarkForm.faviconUrl}
+                  onChange={(event) =>
+                    onBookmarkFormChange("faviconUrl", event.target.value)
+                  }
+                  placeholder="https://example.com"
+                  className={inputClasses}
+                  disabled={!allowSync}
+                />
+                <span className="text-xs text-slate-400 dark:text-slate-500">
+                  Override the auto-detected favicon with a custom source URL
+                </span>
+              </label>
               <div className="flex justify-end">
                 <button
                   type="submit"
