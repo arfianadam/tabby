@@ -152,6 +152,7 @@ const FolderCard = memo(function FolderCard({
             <FontAwesomeIcon
               icon={faFolderOpen}
               className={`shrink-0 ${colors.icon}`}
+              size="lg"
             />
             <span className="text-lg flex-1 wrap-break-word line-clamp-1">
               {folder.name}
