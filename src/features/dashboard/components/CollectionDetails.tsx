@@ -1,15 +1,22 @@
-import { useMemo, memo } from "react";
+import { useMemo, memo, useRef } from "react";
 import {
   DndContext,
   type DragEndEvent,
+  type DragStartEvent,
+  type DragOverEvent,
+  DragOverlay,
   PointerSensor,
-  closestCenter,
   pointerWithin,
   rectIntersection,
   useSensor,
   useSensors,
   type CollisionDetection,
 } from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFolder, faTrash } from "@fortawesome/free-solid-svg-icons";
 import type { Bookmark, Collection, Folder } from "@/types";
@@ -25,9 +32,9 @@ import CreateFolderForm from "./CreateFolderForm";
 const collisionDetectionStrategy: CollisionDetection = (args) => {
   const { active, droppableContainers } = args;
 
-  // 1. For folders, stick to closestCenter among folders
+  // For folders, use rectIntersection among folders only
   if (active.data.current?.type === "folder") {
-    return closestCenter({
+    return rectIntersection({
       ...args,
       droppableContainers: droppableContainers.filter(
         (c) => c.data.current?.type === "folder",
@@ -35,9 +42,9 @@ const collisionDetectionStrategy: CollisionDetection = (args) => {
     });
   }
 
-  // 2. For bookmarks
+  // For bookmarks, prioritize pointer detection for precise positioning
   if (active.data.current?.type === "bookmark") {
-    // Priority 1: Exact pointer match on any bookmark
+    // Priority 1: Pointer over any bookmark
     const pointerCollisions = pointerWithin({
       ...args,
       droppableContainers: droppableContainers.filter(
@@ -49,45 +56,11 @@ const collisionDetectionStrategy: CollisionDetection = (args) => {
       return pointerCollisions;
     }
 
-    // Priority 2: Check if we are over a folder
-    const folderCollisions = rectIntersection({
+    // Priority 2: Fall back to folder detection for cross-folder moves
+    return rectIntersection({
       ...args,
       droppableContainers: droppableContainers.filter(
         (c) => c.data.current?.type === "folder",
-      ),
-    });
-
-    if (folderCollisions.length > 0) {
-      const topFolder = folderCollisions[0];
-      const folderId = topFolder.data?.current?.folder?.id;
-
-      if (folderId) {
-        const folderBookmarks = droppableContainers.filter(
-          (c) =>
-            c.data.current?.type === "bookmark" &&
-            c.data.current?.folderId === folderId,
-        );
-
-        // Priority 3: Magnetic pull to nearest bookmark in this folder
-        const magneticBookmarkCollisions = closestCenter({
-          ...args,
-          droppableContainers: folderBookmarks,
-        });
-
-        if (magneticBookmarkCollisions.length > 0) {
-          return magneticBookmarkCollisions;
-        }
-      }
-
-      // Priority 4: Empty folder (or far from any bookmark in it)
-      return folderCollisions;
-    }
-
-    // 3. Fallback: Not over any folder, check closest bookmarks globally
-    return closestCenter({
-      ...args,
-      droppableContainers: droppableContainers.filter(
-        (c) => c.data.current?.type === "bookmark",
       ),
     });
   }
@@ -176,7 +149,73 @@ const CollectionDetails = memo(function CollectionDetails(
   const { foldersToRender, folderOrder, setFolderOrder, moveBookmark } =
     useFolderOrdering(collection.folders);
 
+  // Track original folder for cross-folder moves
+  const originalFolderRef = useRef<string | null>(null);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    if (active.data.current?.type === "bookmark") {
+      originalFolderRef.current = active.data.current.folderId;
+    }
+  };
+
+  // Handle drag over for bookmark moves (both cross-folder and same-folder)
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.data.current?.type !== "bookmark") {
+      return;
+    }
+
+    // Don't process if dropping on self
+    if (active.id === over.id) {
+      return;
+    }
+
+    const activeId = String(active.id);
+    const sourceFolderId = active.data.current.folderId;
+    let targetFolderId: string | undefined;
+    let targetIndex = 0;
+
+    if (over.data.current?.type === "bookmark") {
+      targetFolderId = over.data.current.folderId;
+    } else if (over.data.current?.type === "folder") {
+      targetFolderId = over.data.current.folder.id;
+    }
+
+    if (!targetFolderId) {
+      return;
+    }
+
+    // Compute target index from current folder state, not stale rendered index
+    const folder = foldersToRender.find((f) => f.id === targetFolderId);
+    if (!folder) {
+      return;
+    }
+
+    if (over.data.current?.type === "bookmark") {
+      const overIndex = folder.bookmarks.findIndex(
+        (b) => b.id === String(over.id),
+      );
+      targetIndex = overIndex >= 0 ? overIndex : folder.bookmarks.length;
+    } else {
+      targetIndex = folder.bookmarks.length;
+    }
+
+    // Update local state during drag to keep DOM order in sync with visual order
+    // This prevents jumps when transforms reset on drag end
+    moveBookmark(activeId, sourceFolderId, targetFolderId, targetIndex);
+
+    // Update the active data's folderId for cross-folder moves
+    if (sourceFolderId !== targetFolderId) {
+      active.data.current.folderId = targetFolderId;
+    }
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
+    const originalFolder = originalFolderRef.current;
+    originalFolderRef.current = null;
+
     const { active, over } = event;
     if (!editingEnabled || !over || active.id === over.id) {
       return;
@@ -190,52 +229,44 @@ const CollectionDetails = memo(function CollectionDetails(
       if (oldIndex === -1 || newIndex === -1) {
         return;
       }
-      const reordered = [...folderOrder];
-      const [moved] = reordered.splice(oldIndex, 1);
-      reordered.splice(newIndex, 0, moved);
-
+      const reordered = arrayMove(folderOrder, oldIndex, newIndex);
       setFolderOrder(reordered);
       onReorderFolders(reordered);
     } else if (type === "bookmark") {
       const bookmarkId = String(active.id);
-      const sourceFolderId = active.data.current?.folderId;
-      let targetFolderId: string | undefined;
-      let targetIndex = 0;
+      // Use the current folderId (may have been updated during drag)
+      const currentFolderId = active.data.current?.folderId;
 
-      if (over.data.current?.type === "folder") {
-        targetFolderId = over.data.current.folder.id;
-        const folder = foldersToRender.find((f) => f.id === targetFolderId);
-        if (folder) {
-          targetIndex = folder.bookmarks.length;
-        }
-      } else if (over.data.current?.type === "bookmark") {
-        targetFolderId = over.data.current.folderId;
-        targetIndex = over.data.current.index;
-      }
-
-      if (!sourceFolderId || !targetFolderId) {
+      if (!currentFolderId || !originalFolder) {
         return;
       }
 
-      // Move locally
-      moveBookmark(bookmarkId, sourceFolderId, targetFolderId, targetIndex);
+      // Local state was already updated during handleDragOver
+      // Now sync with server based on final position
 
-      // Sync remotely
-      if (sourceFolderId === targetFolderId) {
-        const folder = foldersToRender.find((f) => f.id === sourceFolderId);
+      if (originalFolder === currentFolderId) {
+        // Same folder reorder - get final order from local state
+        const folder = foldersToRender.find((f) => f.id === currentFolderId);
         if (folder) {
-          const list = folder.bookmarks.map((b) => b.id);
-          const oldIdx = list.indexOf(bookmarkId);
-          if (oldIdx > -1) {
-            list.splice(oldIdx, 1);
-            let insertionIndex = targetIndex;
-            insertionIndex = Math.max(0, Math.min(insertionIndex, list.length));
-            list.splice(insertionIndex, 0, bookmarkId);
-            onReorderBookmarks(sourceFolderId, list);
-          }
+          const reorderedIds = folder.bookmarks.map((b) => b.id);
+          onReorderBookmarks(currentFolderId, reorderedIds);
         }
       } else {
-        onMoveBookmark(bookmarkId, sourceFolderId, targetFolderId, targetIndex);
+        // Cross-folder move - get target index from local state
+        const targetFolder = foldersToRender.find(
+          (f) => f.id === currentFolderId,
+        );
+        if (targetFolder) {
+          const targetIndex = targetFolder.bookmarks.findIndex(
+            (b) => b.id === bookmarkId,
+          );
+          onMoveBookmark(
+            bookmarkId,
+            originalFolder,
+            currentFolderId,
+            targetIndex >= 0 ? targetIndex : targetFolder.bookmarks.length,
+          );
+        }
       }
     }
   };
@@ -279,26 +310,34 @@ const CollectionDetails = memo(function CollectionDetails(
             <DndContext
               sensors={sensors}
               collisionDetection={collisionDetectionStrategy}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
               onDragEnd={handleDragEnd}
             >
-              <div className="max-h-full overflow-y-auto p-2 flex flex-wrap justify-start gap-4 items-start">
-                {foldersToRender.map((folder, index) => (
-                  <SortableFolderCard
-                    key={folder.id}
-                    folder={folder}
-                    index={index}
-                    bookmarks={folder.bookmarks}
-                    allowSync={editingEnabled}
-                    editingEnabled={editingEnabled}
-                    onOpenBookmarkModal={onOpenBookmarkModal}
-                    onDeleteFolder={onDeleteFolder}
-                    onRenameFolder={onRenameFolder}
-                    onDeleteBookmark={onDeleteBookmark}
-                    faviconMap={faviconMap}
-                    onEditBookmark={onEditBookmark}
-                  />
-                ))}
-              </div>
+              <SortableContext
+                items={folderOrder}
+                strategy={rectSortingStrategy}
+              >
+                <div className="max-h-full overflow-y-auto p-2 flex flex-wrap justify-start gap-4 items-start">
+                  {foldersToRender.map((folder, index) => (
+                    <SortableFolderCard
+                      key={folder.id}
+                      folder={folder}
+                      index={index}
+                      bookmarks={folder.bookmarks}
+                      allowSync={editingEnabled}
+                      editingEnabled={editingEnabled}
+                      onOpenBookmarkModal={onOpenBookmarkModal}
+                      onDeleteFolder={onDeleteFolder}
+                      onRenameFolder={onRenameFolder}
+                      onDeleteBookmark={onDeleteBookmark}
+                      faviconMap={faviconMap}
+                      onEditBookmark={onEditBookmark}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+              <DragOverlay dropAnimation={null}>{null}</DragOverlay>
             </DndContext>
           )}
         </div>

@@ -1,3 +1,7 @@
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import type { Bookmark } from "@/types";
 import SortableBookmarkCard from "./SortableBookmarkCard";
 
@@ -24,25 +28,30 @@ const FolderBookmarks = ({
         <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500 text-sm dark:border-slate-700 dark:text-slate-400">
           <p>
             {allowSync
-              ? "This folder is empty. Use “Add bookmark” to save links here."
+              ? 'This folder is empty. Use "Add bookmark" to save links here.'
               : "This folder is empty. Enable edit mode to add bookmarks."}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1">
-          {bookmarks.map((bookmark, index) => (
-            <SortableBookmarkCard
-              key={bookmark.id}
-              folderId={folderId}
-              bookmark={bookmark}
-              index={index}
-              allowSync={allowSync}
-              faviconSrc={faviconMap[bookmark.id] ?? null}
-              onDeleteBookmark={onDeleteBookmark}
-              onEditBookmark={onEditBookmark}
-            />
-          ))}
-        </div>
+        <SortableContext
+          items={bookmarks.map((b) => b.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="grid grid-cols-1">
+            {bookmarks.map((bookmark, index) => (
+              <SortableBookmarkCard
+                key={bookmark.id}
+                folderId={folderId}
+                bookmark={bookmark}
+                index={index}
+                allowSync={allowSync}
+                faviconSrc={faviconMap[bookmark.id] ?? null}
+                onDeleteBookmark={onDeleteBookmark}
+                onEditBookmark={onEditBookmark}
+              />
+            ))}
+          </div>
+        </SortableContext>
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import { memo } from "react";
-import { useDndContext, useDraggable, useDroppable } from "@dnd-kit/core";
+import { useDndContext } from "@dnd-kit/core";
+import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Bookmark, Folder } from "@/types";
 import FolderCard from "./FolderCard";
@@ -37,35 +38,25 @@ const SortableFolderCard = memo(function SortableFolderCard({
     attributes,
     listeners,
     setActivatorNodeRef,
-    setNodeRef: setDragRef,
+    setNodeRef,
     transform,
+    transition,
     isDragging,
-  } = useDraggable({
+    isOver,
+  } = useSortable({
     id: folder.id,
     data: { type: "folder", folder, index },
     disabled: !editingEnabled,
   });
 
-  const { setNodeRef: setDropRef, isOver } = useDroppable({
-    id: folder.id,
-    data: { type: "folder", folder, index },
-    disabled: !editingEnabled,
-  });
-
+  // Use dnd-kit's transition directly - it manages timing for drag and sort animations
   const style = editingEnabled
     ? {
         transform: CSS.Translate.toString(transform),
-        zIndex: isDragging ? 5 : undefined,
-        opacity: isDragging ? 0.5 : 1,
+        transition,
+        zIndex: isDragging ? 10 : undefined,
       }
     : undefined;
-
-  const showPlaceholder =
-    isOver && active?.data.current?.type === "folder" && !isDragging;
-  const placeAfter =
-    showPlaceholder && (active.data.current?.index || 0) < index;
-  const placeBefore =
-    showPlaceholder && (active.data.current?.index || 0) > index;
 
   const isBookmarkOver =
     isOver &&
@@ -75,18 +66,14 @@ const SortableFolderCard = memo(function SortableFolderCard({
 
   return (
     <div
-      ref={(node) => {
-        setDragRef(node);
-        setDropRef(node);
-      }}
+      ref={setNodeRef}
       style={style}
       className={`relative rounded-2xl w-105 shrink-0 break-inside-avoid mb-4 ${
-        isBookmarkOver ? "ring-2 ring-indigo-500 bg-indigo-50/50" : ""
+        isBookmarkOver
+          ? "ring-2 ring-indigo-500 bg-indigo-50/50 dark:ring-indigo-600 dark:bg-indigo-900/20"
+          : ""
       }`}
     >
-      {placeBefore && (
-        <div className="absolute -top-2 left-0 right-0 h-1 rounded bg-indigo-500" />
-      )}
       <FolderCard
         folder={folder}
         bookmarks={bookmarks}
@@ -108,9 +95,6 @@ const SortableFolderCard = memo(function SortableFolderCard({
           ) : null
         }
       />
-      {placeAfter && (
-        <div className="absolute -bottom-2 left-0 right-0 h-1 rounded bg-indigo-500" />
-      )}
     </div>
   );
 });
