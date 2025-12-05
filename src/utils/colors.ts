@@ -5,6 +5,7 @@ export type FolderColorStyles = {
   icon: string;
   badgeBg: string;
   badgeText: string;
+  headerGradient: string;
 };
 
 const colorPalette: FolderColorStyles[] = [
@@ -16,6 +17,8 @@ const colorPalette: FolderColorStyles[] = [
     icon: "text-red-600 dark:text-red-400",
     badgeBg: "bg-red-200 dark:bg-red-800",
     badgeText: "text-red-800 dark:text-red-200",
+    headerGradient:
+      "bg-gradient-to-br from-red-400 to-red-600 dark:from-red-600 dark:to-red-800",
   },
   {
     // Orange
@@ -25,6 +28,8 @@ const colorPalette: FolderColorStyles[] = [
     icon: "text-orange-600 dark:text-orange-400",
     badgeBg: "bg-orange-200 dark:bg-orange-800",
     badgeText: "text-orange-800 dark:text-orange-200",
+    headerGradient:
+      "bg-gradient-to-br from-orange-400 to-orange-600 dark:from-orange-600 dark:to-orange-800",
   },
   {
     // Amber
@@ -34,6 +39,8 @@ const colorPalette: FolderColorStyles[] = [
     icon: "text-amber-600 dark:text-amber-400",
     badgeBg: "bg-amber-200 dark:bg-amber-800",
     badgeText: "text-amber-800 dark:text-amber-200",
+    headerGradient:
+      "bg-gradient-to-br from-amber-400 to-amber-600 dark:from-amber-600 dark:to-amber-800",
   },
   {
     // Yellow
@@ -43,6 +50,8 @@ const colorPalette: FolderColorStyles[] = [
     icon: "text-yellow-600 dark:text-yellow-400",
     badgeBg: "bg-yellow-200 dark:bg-yellow-800",
     badgeText: "text-yellow-800 dark:text-yellow-200",
+    headerGradient:
+      "bg-gradient-to-br from-yellow-400 to-yellow-600 dark:from-yellow-600 dark:to-yellow-800",
   },
   {
     // Lime
@@ -52,6 +61,8 @@ const colorPalette: FolderColorStyles[] = [
     icon: "text-lime-600 dark:text-lime-400",
     badgeBg: "bg-lime-200 dark:bg-lime-800",
     badgeText: "text-lime-800 dark:text-lime-200",
+    headerGradient:
+      "bg-gradient-to-br from-lime-400 to-lime-600 dark:from-lime-600 dark:to-lime-800",
   },
   {
     // Green
@@ -61,6 +72,8 @@ const colorPalette: FolderColorStyles[] = [
     icon: "text-green-600 dark:text-green-400",
     badgeBg: "bg-green-200 dark:bg-green-800",
     badgeText: "text-green-800 dark:text-green-200",
+    headerGradient:
+      "bg-gradient-to-br from-green-400 to-green-600 dark:from-green-600 dark:to-green-800",
   },
   {
     // Emerald
@@ -70,6 +83,8 @@ const colorPalette: FolderColorStyles[] = [
     icon: "text-emerald-600 dark:text-emerald-400",
     badgeBg: "bg-emerald-200 dark:bg-emerald-800",
     badgeText: "text-emerald-800 dark:text-emerald-200",
+    headerGradient:
+      "bg-gradient-to-br from-emerald-400 to-emerald-600 dark:from-emerald-600 dark:to-emerald-800",
   },
   {
     // Teal
@@ -79,6 +94,8 @@ const colorPalette: FolderColorStyles[] = [
     icon: "text-teal-600 dark:text-teal-400",
     badgeBg: "bg-teal-200 dark:bg-teal-800",
     badgeText: "text-teal-800 dark:text-teal-200",
+    headerGradient:
+      "bg-gradient-to-br from-teal-400 to-teal-600 dark:from-teal-600 dark:to-teal-800",
   },
   {
     // Cyan
@@ -88,6 +105,8 @@ const colorPalette: FolderColorStyles[] = [
     icon: "text-cyan-600 dark:text-cyan-400",
     badgeBg: "bg-cyan-200 dark:bg-cyan-800",
     badgeText: "text-cyan-800 dark:text-cyan-200",
+    headerGradient:
+      "bg-gradient-to-br from-cyan-400 to-cyan-600 dark:from-cyan-600 dark:to-cyan-800",
   },
   {
     // Sky
@@ -97,6 +116,8 @@ const colorPalette: FolderColorStyles[] = [
     icon: "text-sky-600 dark:text-sky-400",
     badgeBg: "bg-sky-200 dark:bg-sky-800",
     badgeText: "text-sky-800 dark:text-sky-200",
+    headerGradient:
+      "bg-gradient-to-br from-sky-400 to-sky-600 dark:from-sky-600 dark:to-sky-800",
   },
   {
     // Blue
@@ -106,6 +127,8 @@ const colorPalette: FolderColorStyles[] = [
     icon: "text-blue-600 dark:text-blue-400",
     badgeBg: "bg-blue-200 dark:bg-blue-800",
     badgeText: "text-blue-800 dark:text-blue-200",
+    headerGradient:
+      "bg-gradient-to-br from-blue-400 to-blue-600 dark:from-blue-600 dark:to-blue-800",
   },
   {
     // Indigo
@@ -115,6 +138,8 @@ const colorPalette: FolderColorStyles[] = [
     icon: "text-indigo-600 dark:text-indigo-400",
     badgeBg: "bg-indigo-200 dark:bg-indigo-800",
     badgeText: "text-indigo-800 dark:text-indigo-200",
+    headerGradient:
+      "bg-gradient-to-br from-indigo-400 to-indigo-600 dark:from-indigo-600 dark:to-indigo-800",
   },
   {
     // Violet
@@ -124,6 +149,8 @@ const colorPalette: FolderColorStyles[] = [
     icon: "text-violet-600 dark:text-violet-400",
     badgeBg: "bg-violet-200 dark:bg-violet-800",
     badgeText: "text-violet-800 dark:text-violet-200",
+    headerGradient:
+      "bg-gradient-to-br from-violet-400 to-violet-600 dark:from-violet-600 dark:to-violet-800",
   },
   {
     // Purple
@@ -133,6 +160,8 @@ const colorPalette: FolderColorStyles[] = [
     icon: "text-purple-600 dark:text-purple-400",
     badgeBg: "bg-purple-200 dark:bg-purple-800",
     badgeText: "text-purple-800 dark:text-purple-200",
+    headerGradient:
+      "bg-gradient-to-br from-purple-400 to-purple-600 dark:from-purple-600 dark:to-purple-800",
   },
   {
     // Fuchsia
@@ -142,6 +171,8 @@ const colorPalette: FolderColorStyles[] = [
     icon: "text-fuchsia-600 dark:text-fuchsia-400",
     badgeBg: "bg-fuchsia-200 dark:bg-fuchsia-800",
     badgeText: "text-fuchsia-800 dark:text-fuchsia-200",
+    headerGradient:
+      "bg-gradient-to-br from-fuchsia-400 to-fuchsia-600 dark:from-fuchsia-600 dark:to-fuchsia-800",
   },
   {
     // Pink
@@ -151,6 +182,8 @@ const colorPalette: FolderColorStyles[] = [
     icon: "text-pink-600 dark:text-pink-400",
     badgeBg: "bg-pink-200 dark:bg-pink-800",
     badgeText: "text-pink-800 dark:text-pink-200",
+    headerGradient:
+      "bg-gradient-to-br from-pink-400 to-pink-600 dark:from-pink-600 dark:to-pink-800",
   },
 ];
 

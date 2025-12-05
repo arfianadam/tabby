@@ -9,8 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBookmark,
   faCheck,
-  faFolderOpen,
-  faPen,
+  faGear,
   faPlus,
   faSpinner,
   faTrash,
@@ -24,6 +23,7 @@ import {
 } from "../constants";
 import FolderBookmarks from "./FolderBookmarks";
 import { getFolderColor } from "@/utils/colors";
+import { getIconDefinition } from "@/components/IconPicker";
 
 type FolderCardProps = {
   folder: Folder;
@@ -35,6 +35,7 @@ type FolderCardProps = {
   onDeleteBookmark: (folderId: string, bookmarkId: string) => void;
   faviconMap: Record<string, string | null>;
   onEditBookmark: (folderId: string, bookmark: Bookmark) => void;
+  onOpenFolderSettings: (folder: Folder) => void;
   dragHandle?: ReactNode;
 };
 
@@ -48,6 +49,7 @@ const FolderCard = memo(function FolderCard({
   onDeleteBookmark,
   faviconMap,
   onEditBookmark,
+  onOpenFolderSettings,
   dragHandle,
 }: FolderCardProps) {
   const [editingName, setEditingName] = useState(false);
@@ -55,6 +57,7 @@ const FolderCard = memo(function FolderCard({
   const [renaming, setRenaming] = useState(false);
 
   const colors = getFolderColor(folder.name);
+  const folderIcon = getIconDefinition(folder.icon);
 
   useEffect(() => {
     if (!editingName) {
@@ -103,7 +106,7 @@ const FolderCard = memo(function FolderCard({
             onSubmit={handleRenameSubmit}
           >
             <FontAwesomeIcon
-              icon={faFolderOpen}
+              icon={folderIcon}
               className={`shrink-0 ${colors.icon}`}
             />
             <input
@@ -150,7 +153,7 @@ const FolderCard = memo(function FolderCard({
           >
             {dragHandle}
             <FontAwesomeIcon
-              icon={faFolderOpen}
+              icon={folderIcon}
               className={`shrink-0 ${colors.icon}`}
               size="lg"
             />
@@ -179,14 +182,11 @@ const FolderCard = memo(function FolderCard({
                 <button
                   type="button"
                   className={`${subtleButtonClasses} ${colors.text} opacity-70 hover:opacity-100`}
-                  onClick={() => {
-                    setNameDraft(folder.name);
-                    setEditingName(true);
-                  }}
+                  onClick={() => onOpenFolderSettings(folder)}
                   disabled={!allowSync}
-                  title="Rename folder"
+                  title="Folder settings"
                 >
-                  <FontAwesomeIcon icon={faPen} />
+                  <FontAwesomeIcon icon={faGear} />
                 </button>
                 <button
                   type="button"

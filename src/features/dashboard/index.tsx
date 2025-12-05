@@ -4,6 +4,7 @@ import { auth } from "@/firebase/client";
 import { useCollections } from "@/hooks/useCollections";
 import { useSelectedCollection } from "./hooks/useSelectedCollection";
 import { useBookmarkModalState } from "./hooks/useBookmarkModalState";
+import { useFolderSettingsModalState } from "./hooks/useFolderSettingsModalState";
 import { useDashboardNotifications } from "./hooks/useDashboardNotifications";
 import { useCollectionActions } from "./hooks/useCollectionActions";
 import { useFolderActions } from "./hooks/useFolderActions";
@@ -12,6 +13,7 @@ import type { Bookmark, BookmarkDraft, Collection, Folder } from "@/types";
 import CollectionDetails from "./components/CollectionDetails";
 import CollectionsSidebar from "./components/CollectionsSidebar";
 import DashboardToasts from "./components/DashboardToasts";
+import FolderSettingsModal from "./components/FolderSettingsModal";
 import { panelClass } from "./components/constants";
 import type { DashboardUser } from "./components/types";
 import { hasChromeTabsSupport } from "@/utils/chrome";
@@ -49,6 +51,13 @@ const Dashboard = ({
     handleBookmarkFormChange,
   } = useBookmarkModalState(selectedCollectionId);
   const {
+    settingsModalFolderId,
+    folderSettingsForm,
+    openFolderSettingsModal,
+    closeFolderSettingsModal,
+    handleFolderSettingsFormChange,
+  } = useFolderSettingsModalState(selectedCollectionId);
+  const {
     banner,
     renderedBanner,
     notify,
@@ -73,7 +82,10 @@ const Dashboard = ({
     deleteFolder: deleteFolderAction,
     renameFolder: renameFolderAction,
     reorderFolders: reorderFoldersAction,
+    updateFolderSettings: updateFolderSettingsAction,
   } = useFolderActions(user.uid, allowSync, notify);
+
+  const [savingFolderSettings, setSavingFolderSettings] = useState(false);
 
   const {
     savingBookmark,
@@ -87,15 +99,17 @@ const Dashboard = ({
   useEffect(() => {
     if (!allowSync) {
       closeBookmarkModal();
+      closeFolderSettingsModal();
       setEditMode(false);
     }
-  }, [allowSync, closeBookmarkModal]);
+  }, [allowSync, closeBookmarkModal, closeFolderSettingsModal]);
 
   useEffect(() => {
     if (!editMode) {
       closeBookmarkModal();
+      closeFolderSettingsModal();
     }
-  }, [editMode, closeBookmarkModal]);
+  }, [editMode, closeBookmarkModal, closeFolderSettingsModal]);
 
   useEffect(() => {
     if (error) {
@@ -172,6 +186,65 @@ const Dashboard = ({
       return renameFolderAction(selectedCollection, folder, nextName);
     },
     [editingEnabled, renameFolderAction, selectedCollection],
+  );
+
+  const handleOpenFolderSettings = useCallback(
+    (folder: Folder) => {
+      if (!editingEnabled) {
+        return;
+      }
+      if (!selectedCollection) {
+        notify("Create or select a collection first.", "danger");
+        return;
+      }
+      if (guardSync()) {
+        return;
+      }
+      openFolderSettingsModal(folder);
+    },
+    [
+      editingEnabled,
+      selectedCollection,
+      guardSync,
+      openFolderSettingsModal,
+      notify,
+    ],
+  );
+
+  const handleSaveFolderSettings = useCallback(
+    (event: React.FormEvent<HTMLFormElement>, folderId: string) => {
+      event.preventDefault();
+      if (!editingEnabled) {
+        return;
+      }
+      const folder = selectedCollection?.folders.find((f) => f.id === folderId);
+      if (!folder) {
+        return;
+      }
+      void (async () => {
+        setSavingFolderSettings(true);
+        try {
+          const success = await updateFolderSettingsAction(
+            selectedCollection,
+            folder,
+            folderSettingsForm.name,
+            folderSettingsForm.icon,
+          );
+          if (success) {
+            closeFolderSettingsModal();
+          }
+        } finally {
+          setSavingFolderSettings(false);
+        }
+      })();
+    },
+    [
+      editingEnabled,
+      selectedCollection,
+      folderSettingsForm,
+      updateFolderSettingsAction,
+      closeFolderSettingsModal,
+    ],
   );
 
   const handleOpenBookmarkModal = useCallback(
@@ -381,6 +454,7 @@ const Dashboard = ({
             onMoveBookmark={handleMoveBookmark}
             isEditing={!!editingBookmarkId}
             onEditBookmark={handleEditBookmark}
+            onOpenFolderSettings={handleOpenFolderSettings}
           />
         ) : (
           <section className={`${panelClass} grow min-h-0`}>
@@ -401,6 +475,20 @@ const Dashboard = ({
         onBannerDismiss={handleBannerDismiss}
         onSyncToastExited={handleSyncToastExited}
         onSyncToastDismiss={handleSyncToastDismiss}
+      />
+      <FolderSettingsModal
+        folder={
+          selectedCollection?.folders.find(
+            (f) => f.id === settingsModalFolderId,
+          ) ?? null
+        }
+        open={Boolean(settingsModalFolderId) && editingEnabled}
+        allowSync={editingEnabled}
+        folderForm={folderSettingsForm}
+        onFolderFormChange={handleFolderSettingsFormChange}
+        onSave={handleSaveFolderSettings}
+        saving={savingFolderSettings}
+        onClose={closeFolderSettingsModal}
       />
     </div>
   );

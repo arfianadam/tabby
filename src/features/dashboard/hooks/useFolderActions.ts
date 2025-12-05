@@ -4,6 +4,7 @@ import {
   deleteFolder as requestDeleteFolder,
   renameFolder as requestRenameFolder,
   reorderFolders as requestReorderFolders,
+  updateFolderSettings as requestUpdateFolderSettings,
 } from "../services/collections";
 import type { Collection, Folder } from "@/types";
 import type { Banner } from "../components/types";
@@ -108,11 +109,50 @@ export const useFolderActions = (
     [guardSync, notify, userId],
   );
 
+  const updateFolderSettings = useCallback(
+    async (
+      collection: Collection | null,
+      folder: Folder,
+      name: string,
+      icon: string,
+    ) => {
+      if (!collection || guardSync()) {
+        return false;
+      }
+      const trimmed = name.trim();
+      if (!trimmed) {
+        notify("Provide a folder name before saving.", "danger");
+        return false;
+      }
+      try {
+        await requestUpdateFolderSettings(
+          userId,
+          collection.id,
+          folder.id,
+          trimmed,
+          icon,
+        );
+        notify("Folder settings updated.", "success");
+        return true;
+      } catch (err) {
+        notify(
+          err instanceof Error
+            ? err.message
+            : "Unable to update folder settings.",
+          "danger",
+        );
+        return false;
+      }
+    },
+    [guardSync, notify, userId],
+  );
+
   return {
     creatingFolder,
     createFolder,
     deleteFolder,
     renameFolder,
     reorderFolders,
+    updateFolderSettings,
   };
 };

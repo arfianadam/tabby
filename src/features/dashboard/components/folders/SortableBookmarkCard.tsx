@@ -38,9 +38,10 @@ const SortableBookmarkCard = ({
   });
 
   // Apply scale for lift effect when dragging
-  const finalTransform = isDragging && transform
-    ? { ...transform, scaleX: 1.03, scaleY: 1.03 }
-    : transform;
+  const finalTransform =
+    isDragging && transform
+      ? { ...transform, scaleX: 1.03, scaleY: 1.03 }
+      : transform;
 
   // Use dnd-kit's transition directly - it manages timing for drag and sort animations
   const style = {

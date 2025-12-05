@@ -18,6 +18,7 @@ type SortableFolderCardProps = {
   onDeleteBookmark: (folderId: string, bookmarkId: string) => void;
   faviconMap: Record<string, string | null>;
   onEditBookmark: (folderId: string, bookmark: Bookmark) => void;
+  onOpenFolderSettings: (folder: Folder) => void;
 };
 
 const SortableFolderCard = memo(function SortableFolderCard({
@@ -32,6 +33,7 @@ const SortableFolderCard = memo(function SortableFolderCard({
   onDeleteBookmark,
   faviconMap,
   onEditBookmark,
+  onOpenFolderSettings,
 }: SortableFolderCardProps) {
   const { active } = useDndContext();
   const {
@@ -84,6 +86,7 @@ const SortableFolderCard = memo(function SortableFolderCard({
         onDeleteBookmark={onDeleteBookmark}
         faviconMap={faviconMap}
         onEditBookmark={onEditBookmark}
+        onOpenFolderSettings={onOpenFolderSettings}
         dragHandle={
           editingEnabled ? (
             <DragHandle

@@ -31,3 +31,14 @@ export const getInitialBookmarkFormState = (): BookmarkFormState => ({
   note: "",
   faviconUrl: "",
 });
+
+export type FolderSettingsFormState = {
+  name: string;
+  icon: string;
+};
+
+export const getInitialFolderSettingsFormState =
+  (): FolderSettingsFormState => ({
+    name: "",
+    icon: "faFolderOpen",
+  });

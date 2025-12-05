@@ -100,6 +100,7 @@ type CollectionDetailsProps = {
   ) => void;
   isEditing: boolean;
   onEditBookmark: (folderId: string, bookmark: Bookmark) => void;
+  onOpenFolderSettings: (folder: Folder) => void;
 };
 
 const CollectionDetails = memo(function CollectionDetails(
@@ -129,6 +130,7 @@ const CollectionDetails = memo(function CollectionDetails(
     onMoveBookmark,
     isEditing,
     onEditBookmark,
+    onOpenFolderSettings,
   } = props;
 
   const editingEnabled = allowSync && editMode;
@@ -333,6 +335,7 @@ const CollectionDetails = memo(function CollectionDetails(
                       onDeleteBookmark={onDeleteBookmark}
                       faviconMap={faviconMap}
                       onEditBookmark={onEditBookmark}
+                      onOpenFolderSettings={onOpenFolderSettings}
                     />
                   ))}
                 </div>

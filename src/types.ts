@@ -10,6 +10,7 @@ export interface Bookmark {
 export interface Folder {
   id: string;
   name: string;
+  icon?: string;
   createdAt: number;
   bookmarks: Bookmark[];
 }

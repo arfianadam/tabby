@@ -40,14 +40,20 @@ const normalizeBookmark = (bookmark: Partial<Bookmark>): Bookmark => {
   return base;
 };
 
-const normalizeFolder = (folder: Partial<Folder>): Folder => ({
-  id: folder.id ?? generateId(),
-  name: (folder.name ?? "").trim() || "Untitled folder",
-  createdAt: folder.createdAt ?? Date.now(),
-  bookmarks: Array.isArray(folder.bookmarks)
-    ? folder.bookmarks.map(normalizeBookmark)
-    : [],
-});
+const normalizeFolder = (folder: Partial<Folder>): Folder => {
+  const normalized: Folder = {
+    id: folder.id ?? generateId(),
+    name: (folder.name ?? "").trim() || "Untitled folder",
+    createdAt: folder.createdAt ?? Date.now(),
+    bookmarks: Array.isArray(folder.bookmarks)
+      ? folder.bookmarks.map(normalizeBookmark)
+      : [],
+  };
+  if (folder.icon) {
+    normalized.icon = folder.icon;
+  }
+  return normalized;
+};
 
 const normalizeCollection = (
   id: string,
@@ -193,6 +199,43 @@ export const renameFolder = async (
         ...folder,
         name: trimmed || "Untitled folder",
       };
+    });
+
+    if (!folderFound) {
+      throw new Error("Folder not found.");
+    }
+
+    return {
+      ...collection,
+      folders,
+    };
+  });
+
+export const updateFolderSettings = async (
+  uid: string,
+  collectionId: string,
+  folderId: string,
+  name: string,
+  icon: string,
+) =>
+  mutateCollection(uid, collectionId, (collection) => {
+    let folderFound = false;
+    const folders = collection.folders.map((folder) => {
+      if (folder.id !== folderId) {
+        return folder;
+      }
+      folderFound = true;
+      const trimmed = name.trim();
+      const updatedFolder = {
+        ...folder,
+        name: trimmed || "Untitled folder",
+      };
+      if (icon && icon !== "faFolderOpen") {
+        updatedFolder.icon = icon;
+      } else {
+        delete updatedFolder.icon;
+      }
+      return updatedFolder;
     });
 
     if (!folderFound) {
