@@ -1,8 +1,17 @@
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { auth } from "@/firebase/client";
+import {
+  clearCacheBootstrapRecord,
+  getCacheBootstrapRecord,
+  setCacheBootstrapFromSecret,
+} from "@/utils/cache/bootstrap";
 import { clearCachedCollections } from "@/utils/cache/collectionsCache";
-import { configureCacheEncryption } from "@/utils/cache/configuration";
+import {
+  configureCacheEncryption,
+  configureCacheEncryptionKeyMaterial,
+} from "@/utils/cache/configuration";
+import { isEncryptionConfigured } from "@/utils/cache/crypto";
 import { setCachedUser, type CachedUser } from "@/utils/cache/userCache";
 
 type PersistedAuthRecord = {
@@ -51,7 +60,8 @@ const getPersistedAuthRecord = (): PersistedAuthRecord | null => {
 type CacheContext = {
   uid: string;
   email?: string | null;
-  secret: string;
+  secret?: string;
+  keyMaterial?: string;
 };
 
 export const useAuthState = () => {
@@ -86,6 +96,12 @@ export const useAuthState = () => {
   useEffect(() => {
     let cancelled = false;
 
+    const bootstrapTimeout = window.setTimeout(() => {
+      if (!cancelled) {
+        setInitializing(false);
+      }
+    }, 2500);
+
     const applyCacheContext = async (
       context: CacheContext | null,
       options?: { clearCollections?: boolean },
@@ -93,6 +109,7 @@ export const useAuthState = () => {
       if (!context) {
         await configureCacheEncryption(null, null);
         await setCachedUser(null);
+        await clearCacheBootstrapRecord();
         if (options?.clearCollections && lastCachedUidRef.current) {
           await clearCachedCollections(lastCachedUidRef.current);
         }
@@ -105,7 +122,21 @@ export const useAuthState = () => {
       }
 
       try {
-        await configureCacheEncryption(context.uid, context.secret);
+        if (context.keyMaterial) {
+          await configureCacheEncryptionKeyMaterial(
+            context.uid,
+            context.keyMaterial,
+          );
+        } else {
+          await configureCacheEncryption(context.uid, context.secret ?? null);
+          if (context.secret) {
+            await setCacheBootstrapFromSecret({
+              uid: context.uid,
+              email: context.email,
+              secret: context.secret,
+            });
+          }
+        }
         const summary: CachedUser = {
           uid: context.uid,
           email: context.email,
@@ -113,7 +144,7 @@ export const useAuthState = () => {
         await setCachedUser(summary);
         if (!cancelled) {
           setCachedUserState(summary);
-          setCacheReady(true);
+          setCacheReady(isEncryptionConfigured());
           lastCachedUidRef.current = summary.uid;
         }
       } catch {
@@ -147,6 +178,26 @@ export const useAuthState = () => {
           email: persistedAuthRecord.email,
           secret: persistedAuthRecord.stsTokenManager.refreshToken,
         });
+        if (!cancelled && isEncryptionConfigured()) {
+          window.clearTimeout(bootstrapTimeout);
+          setInitializing(false);
+        }
+        return;
+      }
+
+      const bootstrapRecord = await getCacheBootstrapRecord();
+      if (!bootstrapRecord) {
+        return;
+      }
+
+      await applyCacheContext({
+        uid: bootstrapRecord.uid,
+        email: bootstrapRecord.email,
+        keyMaterial: bootstrapRecord.keyMaterial,
+      });
+      if (!cancelled && isEncryptionConfigured()) {
+        window.clearTimeout(bootstrapTimeout);
+        setInitializing(false);
       }
     };
 
@@ -155,6 +206,7 @@ export const useAuthState = () => {
     const unsubscribe = onAuthStateChanged(
       auth,
       (nextUser) => {
+        window.clearTimeout(bootstrapTimeout);
         setUser(nextUser);
         if (!nextUser) {
           void applyCacheContext(null, { clearCollections: true }).finally(
@@ -191,6 +243,7 @@ export const useAuthState = () => {
         });
       },
       (err) => {
+        window.clearTimeout(bootstrapTimeout);
         setError(err);
         setInitializing(false);
       },
@@ -198,6 +251,7 @@ export const useAuthState = () => {
 
     return () => {
       cancelled = true;
+      window.clearTimeout(bootstrapTimeout);
       unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

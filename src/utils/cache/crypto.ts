@@ -60,6 +60,28 @@ const deriveKey = async (uid: string, secret: string) => {
   ]);
 };
 
+export const deriveKeyMaterial = async (uid: string, secret: string) => {
+  if (!textEncoder || !hasCryptoSupport()) {
+    throw new Error("Crypto unavailable");
+  }
+  const material = textEncoder.encode(`${uid}:${secret}:${ENCRYPTION_SALT}`);
+  const digest = await window.crypto.subtle.digest("SHA-256", material);
+  return toBase64(digest);
+};
+
+const importKeyMaterial = async (keyMaterial: string) => {
+  if (!hasCryptoSupport()) {
+    throw new Error("Crypto unavailable");
+  }
+  return window.crypto.subtle.importKey(
+    "raw",
+    fromBase64(keyMaterial),
+    "AES-GCM",
+    false,
+    ["encrypt", "decrypt"],
+  );
+};
+
 const ensureCryptoKey = async (uid?: string) => {
   if (!hasCryptoSupport() || !encryptionContext) {
     return null;
@@ -79,6 +101,15 @@ export const createEncryptionContext = (uid: string, secret: string) => ({
   uid,
   secret,
   keyPromise: deriveKey(uid, secret),
+});
+
+export const createEncryptionContextFromKeyMaterial = (
+  uid: string,
+  keyMaterial: string,
+) => ({
+  uid,
+  secret: keyMaterial,
+  keyPromise: importKeyMaterial(keyMaterial),
 });
 
 export const encryptPayload = async (uid: string, plaintext: string) => {
