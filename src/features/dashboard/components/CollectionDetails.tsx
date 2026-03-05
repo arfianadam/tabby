@@ -219,13 +219,14 @@ const CollectionDetails = memo(function CollectionDetails(
     originalFolderRef.current = null;
 
     const { active, over } = event;
-    if (!editingEnabled || !over || active.id === over.id) {
+    if (!editingEnabled || !over) {
       return;
     }
 
     const type = active.data.current?.type;
 
     if (type === "folder") {
+      if (active.id === over.id) return;
       const oldIndex = folderOrder.indexOf(String(active.id));
       const newIndex = folderOrder.indexOf(String(over.id));
       if (oldIndex === -1 || newIndex === -1) {
