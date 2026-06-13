@@ -25,6 +25,17 @@ type DashboardProps = {
   initialCollections?: Collection[];
 };
 
+const SIDEBAR_COLLAPSED_TRACK = "4.125rem";
+const SIDEBAR_EXPANDED_TRACK = "17.125rem";
+
+const getInitialSidebarCollapsed = () => {
+  try {
+    return localStorage.getItem("tabby-sidebar-collapsed") === "true";
+  } catch {
+    return false;
+  }
+};
+
 const Dashboard = ({
   user,
   allowSync,
@@ -38,6 +49,9 @@ const Dashboard = ({
     },
   );
   const [editMode, setEditMode] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    getInitialSidebarCollapsed,
+  );
   const editingEnabled = allowSync && editMode;
   const { selectedCollectionId, setSelectedCollectionId, selectedCollection } =
     useSelectedCollection(collections);
@@ -110,6 +124,13 @@ const Dashboard = ({
       closeFolderSettingsModal();
     }
   }, [editMode, closeBookmarkModal, closeFolderSettingsModal]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      "tabby-sidebar-collapsed",
+      JSON.stringify(sidebarCollapsed),
+    );
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     if (error) {
@@ -413,7 +434,14 @@ const Dashboard = ({
 
   return (
     <div className="h-full flex flex-col gap-2 p-3 overflow-hidden">
-      <div className="grow grid gap-2 grid-cols-[auto_1fr] min-h-0 items-stretch">
+      <div
+        className="grow grid gap-2 min-h-0 min-w-0 items-stretch transition-[grid-template-columns] duration-300 ease-in-out"
+        style={{
+          gridTemplateColumns: `${
+            sidebarCollapsed ? SIDEBAR_COLLAPSED_TRACK : SIDEBAR_EXPANDED_TRACK
+          } minmax(0, 1fr)`,
+        }}
+      >
         <CollectionsSidebar
           allowSync={allowSync}
           editMode={editMode}
@@ -426,6 +454,8 @@ const Dashboard = ({
           noCollections={noCollections}
           loading={loading}
           user={user}
+          isCollapsed={sidebarCollapsed}
+          onCollapsedChange={setSidebarCollapsed}
           onSignOut={handleSignOut}
           onToggleEditMode={() => setEditMode((prev) => !prev)}
         />
@@ -457,7 +487,7 @@ const Dashboard = ({
             onOpenFolderSettings={handleOpenFolderSettings}
           />
         ) : (
-          <section className={`${panelClass} grow min-h-0`}>
+          <section className={`${panelClass} grow min-h-0 min-w-0`}>
             <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500 dark:border-slate-700 dark:text-slate-400">
               {allowSync && loading
                 ? "Loading your collections…"

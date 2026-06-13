@@ -275,7 +275,7 @@ const CollectionDetails = memo(function CollectionDetails(
   };
 
   return (
-    <section className={`${panelClass} min-h-0`}>
+    <section className={`${panelClass} min-h-0 min-w-0`}>
       <div className="flex flex-col gap-4 h-full overflow-hidden">
         <div className="flex gap-2 items-center justify-between">
           <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">

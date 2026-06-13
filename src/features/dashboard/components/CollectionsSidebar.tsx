@@ -16,7 +16,7 @@ import {
   faSun,
   faArrowRightFromBracket,
 } from "@fortawesome/free-solid-svg-icons";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { Collection } from "@/types";
 import type { DashboardUser } from "./types";
 import {
@@ -40,6 +40,8 @@ type CollectionsSidebarProps = {
   noCollections: boolean;
   loading: boolean;
   user: DashboardUser;
+  isCollapsed: boolean;
+  onCollapsedChange: (isCollapsed: boolean) => void;
   onSignOut: () => void;
   onToggleEditMode: () => void;
 };
@@ -56,21 +58,12 @@ const CollectionsSidebar = ({
   noCollections,
   loading,
   user,
+  isCollapsed,
+  onCollapsedChange,
   onSignOut,
   onToggleEditMode,
 }: CollectionsSidebarProps) => {
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    const saved = localStorage.getItem("tabby-sidebar-collapsed");
-    return saved ? JSON.parse(saved) : false;
-  });
   const [newCollection, setNewCollection] = useState("");
-
-  useEffect(() => {
-    localStorage.setItem(
-      "tabby-sidebar-collapsed",
-      JSON.stringify(isCollapsed),
-    );
-  }, [isCollapsed]);
   const { isDark, toggleDarkMode } = useDarkMode();
   const [mounted, setMounted] = useState(false);
 
@@ -99,16 +92,19 @@ const CollectionsSidebar = ({
   // Consistent button sizing when collapsed: fills the container width (constrained by padding) and maintains square aspect ratio
   const collapsedButtonClass =
     "size-12 mx-auto flex items-center justify-center p-0";
+  const collapseToggleClass = "size-12 flex items-center justify-center p-0";
+  const collectionIconClass =
+    "flex size-8 shrink-0 items-center justify-center rounded-lg text-lg leading-none transition-colors";
 
   return (
     <aside
-      className={`${panelClass} box-content min-h-0 transition-[width] duration-300 ease-in-out flex flex-col overflow-hidden ${
-        isCollapsed ? "w-12 items-start" : "w-64"
+      className={`${panelClass} h-full w-full min-w-0 overflow-hidden transition-[box-shadow] duration-300 ease-in-out ${
+        isCollapsed ? "items-start shadow-none" : "shadow-sm"
       }`}
     >
       {/* Header Section */}
       <div
-        className={`flex items-center mb-4 ${isCollapsed ? "justify-center" : "justify-between"}`}
+        className={`flex h-12 shrink-0 items-center mb-4 ${isCollapsed ? "justify-center" : "justify-between"}`}
       >
         {!isCollapsed && (
           <div className="overflow-hidden whitespace-nowrap">
@@ -119,9 +115,9 @@ const CollectionsSidebar = ({
         )}
         <button
           className={`rounded-lg cursor-pointer hover:bg-slate-100 text-slate-500 dark:hover:bg-slate-700 dark:text-slate-400 ${
-            isCollapsed ? collapsedButtonClass : "size-9"
+            isCollapsed ? `${collapseToggleClass} mx-auto` : collapseToggleClass
           }`}
-          onClick={() => setIsCollapsed(!isCollapsed)}
+          onClick={() => onCollapsedChange(!isCollapsed)}
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           <FontAwesomeIcon
@@ -180,7 +176,7 @@ const CollectionsSidebar = ({
                 isActive
                   ? "border-indigo-300 bg-indigo-50 text-indigo-900 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-100"
                   : "border-transparent bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-              } ${isCollapsed ? collapsedButtonClass : "justify-between px-3 py-2"}`}
+              } ${isCollapsed ? collapsedButtonClass : "h-12 justify-between px-3"}`}
               onClick={() => handleCollectionClick(collection.id)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
@@ -193,13 +189,16 @@ const CollectionsSidebar = ({
                 className={`flex items-center min-w-0 flex-1 ${isCollapsed ? "gap-0 justify-center" : "gap-3"}`}
               >
                 <span
-                  className={`flex items-center justify-center rounded-lg p-2 text-lg transition-colors ${
+                  className={`${collectionIconClass} ${
                     isActive
                       ? "text-indigo-600 dark:text-indigo-400"
                       : "text-slate-400 dark:text-slate-500"
                   }`}
                 >
-                  <FontAwesomeIcon icon={isActive ? faFolderOpen : faFolder} />
+                  <FontAwesomeIcon
+                    icon={isActive ? faFolderOpen : faFolder}
+                    className="block"
+                  />
                 </span>
                 {!isCollapsed && (
                   <div className="overflow-hidden flex-1">
