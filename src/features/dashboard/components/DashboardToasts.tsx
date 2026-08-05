@@ -4,9 +4,11 @@ import {
   faCircleExclamation,
   faCircleInfo,
   faCloudArrowUp,
+  faTriangleExclamation,
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import type { Banner } from "./types";
+import type { SyncToastKind } from "../syncNotification";
 import AnimatedToast from "./AnimatedToast";
 import { toastToneClasses } from "./constants";
 
@@ -15,6 +17,7 @@ type DashboardToastsProps = {
   renderedBanner: Banner | null;
   syncToastVisible: boolean;
   syncToastShouldRender: boolean;
+  syncToastKind: SyncToastKind;
   onBannerExited: () => void;
   onBannerDismiss: () => void;
   onSyncToastExited: () => void;
@@ -25,6 +28,20 @@ const toastIcons = {
   info: faCircleInfo,
   success: faCircleCheck,
   danger: faCircleExclamation,
+  warning: faTriangleExclamation,
+} as const;
+
+const syncToastPresentation = {
+  "cache-warning": {
+    icon: faTriangleExclamation,
+    text: "Failed to sync. Using your last cached workspace.",
+    className: toastToneClasses.warning,
+  },
+  "sync-success": {
+    icon: faCloudArrowUp,
+    text: "Workspace reconnected. Changes sync automatically.",
+    className: toastToneClasses.success,
+  },
 } as const;
 
 const DashboardToasts = ({
@@ -32,12 +49,15 @@ const DashboardToasts = ({
   renderedBanner,
   syncToastVisible,
   syncToastShouldRender,
+  syncToastKind,
   onBannerExited,
   onBannerDismiss,
   onSyncToastExited,
   onSyncToastDismiss,
-}: DashboardToastsProps) =>
-  renderedBanner || syncToastShouldRender ? (
+}: DashboardToastsProps) => {
+  const syncToast = syncToastPresentation[syncToastKind];
+
+  return renderedBanner || syncToastShouldRender ? (
     <div className="fixed bottom-8 left-0 right-0 z-50 flex flex-col items-center gap-2">
       {renderedBanner && (
         <AnimatedToast isVisible={Boolean(banner)} onExited={onBannerExited}>
@@ -74,12 +94,14 @@ const DashboardToasts = ({
           isVisible={syncToastVisible}
           onExited={onSyncToastExited}
         >
-          <div className="flex items-center gap-3 rounded-2xl bg-emerald-600/95 px-4 py-3 text-sm font-medium text-white shadow-2xl dark:bg-emerald-500/95">
-            <FontAwesomeIcon icon={faCloudArrowUp} className="text-base" />
-            <span>Workspace reconnected. Changes sync automatically.</span>
+          <div
+            className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium shadow-2xl ${syncToast.className}`}
+          >
+            <FontAwesomeIcon icon={syncToast.icon} className="text-base" />
+            <span>{syncToast.text}</span>
             <button
               type="button"
-              className="rounded-full p-1 text-white/80 hover:bg-emerald-500/40 dark:hover:bg-emerald-400/40"
+              className="rounded-full p-1 text-white/80 hover:bg-white/20"
               onClick={onSyncToastDismiss}
               aria-label="Dismiss sync status"
             >
@@ -90,5 +112,6 @@ const DashboardToasts = ({
       )}
     </div>
   ) : null;
+};
 
 export default DashboardToasts;

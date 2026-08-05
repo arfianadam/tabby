@@ -81,7 +81,10 @@ const collectionDocRef = (uid: string, collectionId: string) =>
 
 export const subscribeToCollections = (
   uid: string,
-  onChange: (collections: Collection[]) => void,
+  onChange: (
+    collections: Collection[],
+    metadata: { fromCache: boolean },
+  ) => void,
   onError?: (error: FirestoreError) => void,
 ) => {
   const q = query(userCollectionsRef(uid), orderBy("createdAt", "asc"));
@@ -108,7 +111,7 @@ export const subscribeToCollections = (
         );
       });
 
-      onChange(nextCollections);
+      onChange(nextCollections, { fromCache: snapshot.metadata.fromCache });
     },
     (err) => {
       onError?.(err);

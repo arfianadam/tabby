@@ -23,6 +23,7 @@ type DashboardProps = {
   user: DashboardUser;
   allowSync: boolean;
   initialCollections?: Collection[];
+  initialCollectionsLoaded?: boolean;
 };
 
 const SIDEBAR_COLLAPSED_TRACK = "4.125rem";
@@ -40,11 +41,13 @@ const Dashboard = ({
   user,
   allowSync,
   initialCollections = [],
+  initialCollectionsLoaded = false,
 }: DashboardProps) => {
-  const { collections, loading, error } = useCollections(
+  const { collections, syncSource, loading, error } = useCollections(
     allowSync ? user.uid : undefined,
     {
       initialData: initialCollections,
+      initialDataLoaded: initialCollectionsLoaded,
       cacheKey: allowSync ? user.uid : undefined,
     },
   );
@@ -77,11 +80,17 @@ const Dashboard = ({
     notify,
     syncToastVisible,
     syncToastShouldRender,
+    syncToastKind,
     handleBannerDismiss,
     handleBannerExited,
     handleSyncToastDismiss,
     handleSyncToastExited,
-  } = useDashboardNotifications(allowSync);
+  } = useDashboardNotifications(
+    allowSync,
+    syncSource,
+    !allowSync || loading,
+    Boolean(error),
+  );
 
   const {
     creatingCollection,
@@ -133,10 +142,10 @@ const Dashboard = ({
   }, [sidebarCollapsed]);
 
   useEffect(() => {
-    if (error) {
+    if (error && syncSource !== "cache") {
       notify(`Failed to sync collections: ${error.message}`, "danger");
     }
-  }, [error, notify]);
+  }, [error, notify, syncSource]);
 
   const handleCreateCollection = useCallback(
     (name: string) => {
@@ -501,6 +510,7 @@ const Dashboard = ({
         renderedBanner={renderedBanner}
         syncToastVisible={syncToastVisible}
         syncToastShouldRender={syncToastShouldRender}
+        syncToastKind={syncToastKind}
         onBannerExited={handleBannerExited}
         onBannerDismiss={handleBannerDismiss}
         onSyncToastExited={handleSyncToastExited}

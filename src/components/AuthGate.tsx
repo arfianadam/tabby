@@ -128,7 +128,7 @@ const AuthGate = () => {
 
   const workspaceUser = user ?? cachedUser ?? null;
   const isColdStart = initializing && !workspaceUser;
-  const { cachedCollections } = useCachedCollections(
+  const { cachedCollections, cacheLoaded } = useCachedCollections(
     workspaceUser?.uid ?? null,
     cacheReady,
   );
@@ -144,6 +144,7 @@ const AuthGate = () => {
         user={workspaceUser}
         allowSync={Boolean(user)}
         initialCollections={cachedCollections}
+        initialCollectionsLoaded={cacheLoaded}
       />
     );
   }

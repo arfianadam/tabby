@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "test": "node --experimental-strip-types --test test/*.test.ts",
     "build": "tsc -b && vite build",
     "build:dev": "NODE_ENV=development vite build --mode development --config vite.dev.config.ts",
     "lint": "eslint .",

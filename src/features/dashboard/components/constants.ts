@@ -13,6 +13,7 @@ export const subtleButtonClasses =
 export const toastToneClasses = {
   info: "bg-slate-900/95 text-white dark:bg-slate-700/95",
   success: "bg-emerald-600/95 text-white dark:bg-emerald-500/95",
+  warning: "bg-amber-500/95 text-white dark:bg-amber-500/95",
   danger: "bg-rose-600/95 text-white dark:bg-rose-500/95",
 } as const;
 

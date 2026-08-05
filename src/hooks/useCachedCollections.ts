@@ -7,21 +7,30 @@ export const useCachedCollections = (
   cacheReady: boolean,
 ) => {
   const [cachedCollections, setCachedCollections] = useState<Collection[]>([]);
+  const [cacheLoaded, setCacheLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     if (!uid) {
       setCachedCollections([]);
+      setCacheLoaded(false);
       return;
     }
     if (!cacheReady) {
+      setCacheLoaded(false);
       return;
     }
 
     const loadCachedCollections = async () => {
-      const data = await getCachedCollections(uid);
-      if (!cancelled) {
-        setCachedCollections(data);
+      try {
+        const data = await getCachedCollections(uid);
+        if (!cancelled) {
+          setCachedCollections(data);
+        }
+      } finally {
+        if (!cancelled) {
+          setCacheLoaded(true);
+        }
       }
     };
 
@@ -32,5 +41,5 @@ export const useCachedCollections = (
     };
   }, [uid, cacheReady]);
 
-  return { cachedCollections };
+  return { cachedCollections, cacheLoaded };
 };

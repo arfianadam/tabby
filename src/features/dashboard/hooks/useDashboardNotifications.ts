@@ -1,30 +1,76 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Banner, BannerTone } from "../components/types";
+import {
+  getSyncToastPlan,
+  type CollectionSyncSource,
+  type SyncToastKind,
+} from "../syncNotification";
 
-export const useDashboardNotifications = (allowSync: boolean) => {
+const getInitialOnlineStatus = () =>
+  typeof navigator === "undefined" ? true : navigator.onLine;
+
+export const useDashboardNotifications = (
+  allowSync: boolean,
+  syncSource: CollectionSyncSource,
+  isLoading: boolean,
+  hasSyncError: boolean,
+) => {
   const [banner, setBanner] = useState<Banner | null>(null);
   const [renderedBanner, setRenderedBanner] = useState<Banner | null>(null);
   const [syncToastVisible, setSyncToastVisible] = useState(false);
   const [syncToastShouldRender, setSyncToastShouldRender] = useState(false);
-  const wasRestoringRef = useRef(!allowSync);
+  const [syncToastKind, setSyncToastKind] =
+    useState<SyncToastKind>("cache-warning");
+  const [isOnline, setIsOnline] = useState(getInitialOnlineStatus);
+  const cacheWarningShownRef = useRef(false);
 
   useEffect(() => {
-    if (!allowSync) {
-      wasRestoringRef.current = true;
-      setSyncToastVisible(false);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    const plan = getSyncToastPlan({
+      source: syncSource,
+      cacheWarningShown: cacheWarningShownRef.current,
+      allowSync,
+      hasSyncError,
+      isOnline,
+      isLoading,
+    });
+    if (!plan) {
+      if (isLoading) {
+        cacheWarningShownRef.current = false;
+        setSyncToastVisible(false);
+      }
       return;
     }
-    if (wasRestoringRef.current) {
-      wasRestoringRef.current = false;
+
+    let hideTimeout: number | undefined;
+    const showToast = () => {
+      cacheWarningShownRef.current = plan.kind === "cache-warning";
+      setSyncToastKind(plan.kind);
       setSyncToastShouldRender(true);
       setSyncToastVisible(true);
-      const timeout = window.setTimeout(() => {
+      hideTimeout = window.setTimeout(() => {
         setSyncToastVisible(false);
       }, 4000);
-      return () => window.clearTimeout(timeout);
-    }
-    return;
-  }, [allowSync]);
+    };
+    const showTimeout = window.setTimeout(showToast, plan.delayMs);
+
+    return () => {
+      window.clearTimeout(showTimeout);
+      if (hideTimeout !== undefined) {
+        window.clearTimeout(hideTimeout);
+      }
+    };
+  }, [allowSync, hasSyncError, isLoading, isOnline, syncSource]);
 
   useEffect(() => {
     if (!banner) {
@@ -67,6 +113,7 @@ export const useDashboardNotifications = (allowSync: boolean) => {
     notify,
     syncToastVisible,
     syncToastShouldRender,
+    syncToastKind,
     handleBannerDismiss,
     handleBannerExited,
     handleSyncToastDismiss,
