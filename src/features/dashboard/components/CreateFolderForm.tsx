@@ -23,33 +23,40 @@ const CreateFolderForm = ({
   };
 
   return (
-    <form className="space-y-1" onSubmit={handleCreateSubmit}>
-      <label className="flex flex-col gap-1 text-sm font-medium uppercase text-slate-700 dark:text-slate-300">
-        New folder
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Ex: Launch inspiration"
-            value={newFolder}
-            disabled={disabled}
-            onChange={(event) => setNewFolder(event.target.value)}
-            className={`${inputClasses} ${
-              disabled ? "cursor-not-allowed opacity-60" : ""
-            }`}
-          />
-          <button
-            type="submit"
-            disabled={creatingFolder || disabled}
-            className={`${actionButtonClasses} gap-2`}
-          >
-            <FontAwesomeIcon
-              icon={creatingFolder ? faSpinner : faPlus}
-              spin={creatingFolder}
-            />
-            {creatingFolder ? "Adding…" : "Add"}
-          </button>
-        </div>
+    <form
+      className="flex flex-col gap-2 rounded-2xl border border-[var(--line)] bg-[var(--surface-muted)] p-2 sm:flex-row sm:items-center"
+      onSubmit={handleCreateSubmit}
+    >
+      <label className="shrink-0 px-2 text-[0.64rem] font-bold uppercase tracking-[0.16em] text-[var(--muted)]">
+        Add folder
       </label>
+      <div className="flex min-w-0 flex-1 gap-2">
+        <input
+          type="text"
+          aria-label="New folder name"
+          placeholder="Name this folder…"
+          value={newFolder}
+          disabled={disabled}
+          onChange={(event) => setNewFolder(event.target.value)}
+          className={`${inputClasses} bg-[var(--surface-raised)] py-2 ${
+            disabled ? "cursor-not-allowed opacity-60" : ""
+          }`}
+        />
+        <button
+          type="submit"
+          aria-label="Add folder"
+          disabled={creatingFolder || disabled}
+          className={`${actionButtonClasses} shrink-0 gap-2 py-2`}
+        >
+          <FontAwesomeIcon
+            icon={creatingFolder ? faSpinner : faPlus}
+            spin={creatingFolder}
+          />
+          <span className="hidden sm:inline">
+            {creatingFolder ? "Adding…" : "Add folder"}
+          </span>
+        </button>
+      </div>
     </form>
   );
 };

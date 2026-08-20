@@ -18,7 +18,12 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFolder, faTrash } from "@fortawesome/free-solid-svg-icons";
+import {
+  faBookmark,
+  faFolder,
+  faLayerGroup,
+  faTrash,
+} from "@fortawesome/free-solid-svg-icons";
 import type { Bookmark, Collection, Folder } from "@/types";
 import type { BookmarkFormState } from "./types";
 import type { BrowserTab } from "@/utils/chrome";
@@ -275,39 +280,71 @@ const CollectionDetails = memo(function CollectionDetails(
   };
 
   return (
-    <section className={`${panelClass} min-h-0 min-w-0`}>
-      <div className="flex flex-col gap-4 h-full overflow-hidden">
-        <div className="flex gap-2 items-center justify-between">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-            {collection.name}
-          </h2>
+    <main className={`${panelClass} min-h-0 min-w-0 overflow-hidden`}>
+      <div className="flex h-full flex-col overflow-hidden">
+        <header className="shrink-0 border-b border-[var(--line)] px-5 py-5 sm:px-7 sm:py-6">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="min-w-0">
+              <div className="mb-2 flex items-center gap-2 text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[var(--muted)]">
+                <span>Workspace</span>
+                <span className="size-1 rounded-full bg-[var(--accent)]" />
+                <span>
+                  {editingEnabled ? "Editing enabled" : "Browse mode"}
+                </span>
+              </div>
+              <h2 className="truncate text-2xl font-bold tracking-[-0.04em] text-[var(--ink)] sm:text-3xl">
+                {collection.name}
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="hidden items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--surface-muted)] px-3 py-1.5 text-xs font-semibold text-[var(--muted)] sm:flex">
+                <FontAwesomeIcon icon={faLayerGroup} />
+                {collection.folders.length} folders
+              </div>
+              <div className="hidden items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--surface-muted)] px-3 py-1.5 text-xs font-semibold text-[var(--muted)] sm:flex">
+                <FontAwesomeIcon icon={faBookmark} />
+                {allBookmarks.length} links
+              </div>
+              {editingEnabled && (
+                <button
+                  className={`${subtleButtonClasses} size-9 border-transparent bg-transparent p-0 text-rose-500 hover:border-rose-500/20 hover:bg-rose-500/8 hover:text-rose-600`}
+                  type="button"
+                  onClick={() => onDeleteCollection(collection)}
+                  disabled={!editingEnabled}
+                  aria-label={`Delete ${collection.name}`}
+                  title="Delete collection"
+                >
+                  <FontAwesomeIcon icon={faTrash} />
+                </button>
+              )}
+            </div>
+          </div>
           {editingEnabled && (
-            <button
-              className={`${subtleButtonClasses} text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300`}
-              type="button"
-              onClick={() => onDeleteCollection(collection)}
-              disabled={!editingEnabled}
-            >
-              <FontAwesomeIcon icon={faTrash} />
-            </button>
+            <div className="mt-5">
+              <CreateFolderForm
+                onCreateFolder={onCreateFolder}
+                creatingFolder={creatingFolder}
+                disabled={!collection || !editingEnabled}
+              />
+            </div>
           )}
-        </div>
-        {editingEnabled && (
-          <CreateFolderForm
-            onCreateFolder={onCreateFolder}
-            creatingFolder={creatingFolder}
-            disabled={!collection || !editingEnabled}
-          />
-        )}
-        <div className="grow flex flex-col gap-4 overflow-hidden">
+        </header>
+        <div className="grow overflow-hidden p-2 sm:p-3">
           {collection.folders.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500 dark:border-slate-700 dark:text-slate-400">
-              <p className="flex items-center justify-center gap-2 text-sm">
-                <FontAwesomeIcon icon={faFolder} />
-                {editingEnabled
-                  ? "No folders yet. Add one above to start saving bookmarks."
-                  : "No folders yet. Enable edit mode to add folders."}
-              </p>
+            <div className="flex h-full min-h-56 items-center justify-center rounded-[1.35rem] border border-dashed border-[var(--line)] bg-[var(--surface-muted)] p-8 text-center text-[var(--muted)]">
+              <div>
+                <span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-[var(--surface-raised)] text-[var(--accent)] shadow-sm">
+                  <FontAwesomeIcon icon={faFolder} />
+                </span>
+                <p className="text-sm font-semibold text-[var(--ink)]">
+                  This collection is ready for its first folder
+                </p>
+                <p className="mt-1 text-xs">
+                  {editingEnabled
+                    ? "Add one above to start organising your links."
+                    : "Enable edit mode to add folders and bookmarks."}
+                </p>
+              </div>
             </div>
           ) : (
             <DndContext
@@ -321,7 +358,7 @@ const CollectionDetails = memo(function CollectionDetails(
                 items={folderOrder}
                 strategy={rectSortingStrategy}
               >
-                <div className="max-h-full overflow-y-auto p-2 flex flex-wrap justify-start gap-4 items-start">
+                <div className="folder-grid soft-scrollbar h-full max-h-full overflow-y-auto p-3 sm:p-4">
                   {foldersToRender.map((folder, index) => (
                     <SortableFolderCard
                       key={folder.id}
@@ -359,7 +396,7 @@ const CollectionDetails = memo(function CollectionDetails(
         hasChromeTabsSupport={hasChromeTabsSupport}
         onClose={onCloseBookmarkModal}
       />
-    </section>
+    </main>
   );
 });
 

@@ -26,8 +26,8 @@ type DashboardProps = {
   initialCollectionsLoaded?: boolean;
 };
 
-const SIDEBAR_COLLAPSED_TRACK = "4.125rem";
-const SIDEBAR_EXPANDED_TRACK = "17.125rem";
+const SIDEBAR_COLLAPSED_TRACK = "5rem";
+const SIDEBAR_EXPANDED_TRACK = "16.75rem";
 
 const getInitialSidebarCollapsed = () => {
   try {
@@ -442,14 +442,18 @@ const Dashboard = ({
   }, []);
 
   return (
-    <div className="h-full flex flex-col gap-2 p-3 overflow-hidden">
+    <div className="h-full overflow-hidden p-2.5 sm:p-4 lg:p-5">
       <div
-        className="grow grid gap-2 min-h-0 min-w-0 items-stretch transition-[grid-template-columns] duration-300 ease-in-out"
-        style={{
-          gridTemplateColumns: `${
-            sidebarCollapsed ? SIDEBAR_COLLAPSED_TRACK : SIDEBAR_EXPANDED_TRACK
-          } minmax(0, 1fr)`,
-        }}
+        className="dashboard-grid grid h-full min-h-0 min-w-0 items-stretch gap-2.5 sm:gap-4 transition-[grid-template-columns] duration-300 ease-out"
+        style={
+          {
+            "--sidebar-width": `${
+              sidebarCollapsed
+                ? SIDEBAR_COLLAPSED_TRACK
+                : SIDEBAR_EXPANDED_TRACK
+            }`,
+          } as React.CSSProperties
+        }
       >
         <CollectionsSidebar
           allowSync={allowSync}
@@ -496,13 +500,13 @@ const Dashboard = ({
             onOpenFolderSettings={handleOpenFolderSettings}
           />
         ) : (
-          <section className={`${panelClass} grow min-h-0 min-w-0`}>
-            <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500 dark:border-slate-700 dark:text-slate-400">
+          <main className={`${panelClass} min-h-0 min-w-0 p-6`}>
+            <div className="m-auto max-w-md rounded-[1.5rem] border border-dashed border-[var(--line)] bg-[var(--surface-muted)] p-10 text-center text-[var(--muted)]">
               {allowSync && loading
                 ? "Loading your collections…"
                 : "Create a collection on the left to begin."}
             </div>
-          </section>
+          </main>
         )}
       </div>
       <DashboardToasts

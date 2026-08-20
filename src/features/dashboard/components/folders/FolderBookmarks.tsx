@@ -23,10 +23,10 @@ const FolderBookmarks = ({
   onEditBookmark,
 }: FolderBookmarksProps) => {
   return (
-    <div>
+    <div className="p-2">
       {bookmarks.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-slate-500 text-sm dark:border-slate-700 dark:text-slate-400">
-          <p>
+        <div className="rounded-2xl border border-dashed border-[var(--line)] bg-[var(--surface-muted)] px-5 py-8 text-center text-xs text-[var(--muted)]">
+          <p className="leading-relaxed">
             {allowSync
               ? 'This folder is empty. Use "Add bookmark" to save links here.'
               : "This folder is empty. Enable edit mode to add bookmarks."}

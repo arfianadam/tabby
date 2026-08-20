@@ -53,7 +53,7 @@ const SortableBookmarkCard = ({
   } as React.CSSProperties;
 
   return (
-    <div ref={setNodeRef} style={style} className="py-1.5">
+    <div ref={setNodeRef} style={style} className="py-0.75">
       <BookmarkCard
         folderId={folderId}
         bookmark={bookmark}
@@ -68,7 +68,7 @@ const SortableBookmarkCard = ({
               setActivatorNodeRef={setActivatorNodeRef}
               attributes={attributes}
               listeners={listeners}
-              className="absolute left-2 top-1.25 z-10"
+              className="absolute left-[3px] top-1/2 z-10 -translate-y-1/2"
             />
           ) : undefined
         }

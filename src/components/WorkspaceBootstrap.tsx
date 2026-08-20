@@ -1,15 +1,22 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faCat, faSpinner } from "@fortawesome/free-solid-svg-icons";
 
 const WorkspaceBootstrap = () => (
-  <div className="rounded-2xl bg-white/90 p-6 text-center text-slate-600 shadow-xl ring-1 ring-slate-100 backdrop-blur dark:bg-slate-800/90 dark:text-slate-400 dark:ring-slate-700">
-    <div className="flex justify-center text-indigo-500 dark:text-indigo-400">
-      <FontAwesomeIcon icon={faSpinner} spin className="text-3xl" />
+  <div className="flex h-full items-center justify-center bg-[var(--canvas)] p-6">
+    <div className="w-full max-w-sm rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] p-8 text-center shadow-[0_24px_70px_rgba(34,38,33,0.12)]">
+      <div className="relative mx-auto flex size-14 items-center justify-center rounded-2xl bg-[var(--accent)] text-xl text-white">
+        <FontAwesomeIcon icon={faCat} />
+        <span className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full border-2 border-[var(--surface)] bg-[var(--surface-raised)] text-[0.62rem] text-[var(--accent)]">
+          <FontAwesomeIcon icon={faSpinner} spin />
+        </span>
+      </div>
+      <h1 className="mt-5 text-xl font-bold tracking-tight text-[var(--ink)]">
+        Preparing your workspace…
+      </h1>
+      <p className="mt-2 text-sm text-[var(--muted)]">
+        Bringing your collections and links into place.
+      </p>
     </div>
-    <h1 className="mt-3 text-xl font-semibold text-slate-900 dark:text-white">
-      Preparing your workspace…
-    </h1>
-    <p className="mt-2 text-sm">Please wait while we sync your account.</p>
   </div>
 );
 

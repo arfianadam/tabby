@@ -25,7 +25,7 @@ const COLUMNS_PER_ROW = 8;
 const IconPicker = memo(function IconPicker({
   selectedIcon,
   onSelectIcon,
-  colorClass = "text-indigo-600",
+  colorClass = "text-[var(--accent)]",
   disabled = false,
 }: IconPickerProps) {
   const {
@@ -95,9 +95,7 @@ const IconPicker = memo(function IconPicker({
       <div className="relative group">
         <div
           className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
-            isSearchFocused
-              ? "text-indigo-500 dark:text-indigo-400"
-              : "text-slate-400 dark:text-slate-500"
+            isSearchFocused ? "text-[var(--accent)]" : "text-[var(--muted)]"
           }`}
         >
           <FontAwesomeIcon icon={faMagnifyingGlass} className="text-sm" />
@@ -111,13 +109,13 @@ const IconPicker = memo(function IconPicker({
           onBlur={() => setIsSearchFocused(false)}
           placeholder="Search icons..."
           disabled={disabled}
-          className="w-full rounded-xl border border-slate-200 bg-slate-50/80 pl-9 pr-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:bg-slate-900/50 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-800 dark:focus:border-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed"
+          className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface-muted)] py-2.5 pr-9 pl-9 text-sm text-[var(--ink)] placeholder:text-[var(--muted)] transition-all duration-200 focus:border-[var(--accent)] focus:bg-[var(--surface-raised)] focus:outline-none focus:ring-3 focus:ring-orange-500/10 disabled:cursor-not-allowed disabled:opacity-60"
         />
         {searchQuery && (
           <button
             type="button"
             onClick={handleClearSearch}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+            className="absolute top-1/2 right-3 -translate-y-1/2 text-[var(--muted)] transition-colors hover:text-[var(--ink)]"
             aria-label="Clear search"
           >
             <FontAwesomeIcon icon={faXmark} className="text-sm" />
@@ -135,8 +133,8 @@ const IconPicker = memo(function IconPicker({
             disabled={disabled}
             className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${
               selectedCategory === category.id
-                ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 shadow-sm"
-                : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                ? "bg-[var(--ink)] text-[var(--surface)] shadow-sm"
+                : "text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)]"
             }`}
           >
             {category.label}
@@ -148,19 +146,17 @@ const IconPicker = memo(function IconPicker({
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="relative overflow-y-auto rounded-xl border border-slate-200 bg-white dark:bg-slate-800/50 dark:border-slate-700"
+        className="soft-scrollbar relative overflow-y-auto rounded-xl border border-[var(--line)] bg-[var(--surface-raised)]"
         style={{ height: CONTAINER_HEIGHT }}
       >
         {icons.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-slate-500 dark:text-slate-400">
+          <div className="flex h-full flex-col items-center justify-center text-[var(--muted)]">
             <FontAwesomeIcon
               icon={faMagnifyingGlass}
               className="text-3xl mb-2 opacity-40"
             />
             <p className="text-sm">No icons found</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500">
-              Try a different search term
-            </p>
+            <p className="text-xs opacity-70">Try a different search term</p>
           </div>
         ) : (
           <div
@@ -197,13 +193,13 @@ const IconPicker = memo(function IconPicker({
                       .trim()}
                     className={`relative aspect-square flex items-center justify-center rounded-lg transition-all duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 group ${
                       isSelected
-                        ? `${colorClass} bg-indigo-50 ring-2 ring-indigo-500 ring-offset-1 dark:bg-indigo-900/30 dark:ring-indigo-400 dark:ring-offset-slate-800`
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                        ? `${colorClass} bg-orange-500/8 ring-2 ring-[var(--accent)] ring-offset-1 ring-offset-[var(--surface-raised)]`
+                        : "text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)]"
                     }`}
                   >
                     <FontAwesomeIcon icon={iconDef} className="text-lg" />
                     {isSelected && (
-                      <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-white text-[14px] shadow-sm">
+                      <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent)] text-[14px] text-white shadow-sm">
                         <FontAwesomeIcon icon={faCheck} />
                       </span>
                     )}
@@ -216,13 +212,13 @@ const IconPicker = memo(function IconPicker({
       </div>
 
       {/* Icon Count */}
-      <div className="flex justify-between items-center text-xs text-slate-500 dark:text-slate-400">
+      <div className="flex items-center justify-between text-xs text-[var(--muted)]">
         <span>
           {icons.length} icon{icons.length !== 1 ? "s" : ""}
           {searchQuery && ` matching "${searchQuery}"`}
         </span>
         {selectedIcon && (
-          <span className="flex items-center gap-1.5 font-medium text-indigo-600 dark:text-indigo-400">
+          <span className="flex items-center gap-1.5 font-semibold text-[var(--accent)]">
             <FontAwesomeIcon icon={getIconDefinition(selectedIcon)} />
             {selectedIcon
               .replace("fa", "")

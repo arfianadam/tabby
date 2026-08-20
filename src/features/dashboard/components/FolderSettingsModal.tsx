@@ -65,10 +65,10 @@ const FolderSettingsModal = ({
   const titleId = `folder-settings-${folder.id}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm dark:bg-slate-950/80"
+        className="absolute inset-0 bg-[#171a17]/72 backdrop-blur-sm"
         aria-hidden="true"
         onClick={onClose}
       />
@@ -78,21 +78,18 @@ const FolderSettingsModal = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative z-10 w-full max-w-2xl rounded-2xl bg-white shadow-2xl dark:bg-slate-800 overflow-hidden"
+        className="relative z-10 max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[1.75rem] border border-[var(--line)] bg-[var(--surface)] shadow-[0_32px_100px_rgba(0,0,0,0.34)]"
       >
         {/* Header with Preview */}
         <div className="relative">
-          {/* Gradient Header Background */}
-          <div
-            className={`py-6 pl-29 pr-6 ${previewColors.headerGradient} transition-colors duration-300`}
-          >
+          <div className="bg-[#242824] py-7 pr-14 pl-28 text-white">
             {/* Title */}
-            <p className="text-xs font-semibold uppercase tracking-wider text-white/70">
-              Folder Settings
+            <p className="text-[0.64rem] font-bold uppercase tracking-[0.18em] text-[var(--accent)]">
+              Folder settings
             </p>
             <h3
               id={titleId}
-              className="text-lg font-bold text-white truncate max-w-xs"
+              className="mt-1 max-w-xs truncate text-xl font-bold tracking-tight text-white"
             >
               {folderForm.name || folder.name}
             </h3>
@@ -101,7 +98,7 @@ const FolderSettingsModal = ({
           {/* Close Button */}
           <button
             type="button"
-            className="absolute top-4 right-4 cursor-pointer rounded-full h-8 w-8 flex items-center justify-center bg-white/20 text-white/80 transition-all hover:bg-white/30 hover:text-white backdrop-blur-sm"
+            className="absolute top-4 right-4 flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/60 transition-all hover:bg-white/10 hover:text-white"
             onClick={onClose}
             aria-label="Close folder settings"
           >
@@ -111,7 +108,7 @@ const FolderSettingsModal = ({
           {/* Preview Icon - Floating */}
           <div className="absolute -bottom-8 left-6">
             <div
-              className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-white dark:bg-slate-700 ${previewColors.border} border-2 shadow-lg transition-all duration-300`}
+              className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--surface-raised)] ${previewColors.border} border-2 shadow-lg transition-all duration-300`}
             >
               <FontAwesomeIcon
                 icon={previewIcon}
@@ -126,7 +123,7 @@ const FolderSettingsModal = ({
           <div className="space-y-6">
             {/* Name Input */}
             <div>
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+              <label className="flex flex-col gap-2 text-xs font-bold text-[var(--ink)]">
                 <span className="flex items-center gap-2">Folder Name</span>
                 <input
                   ref={nameInputRef}
@@ -142,7 +139,7 @@ const FolderSettingsModal = ({
 
             {/* Icon Picker */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              <label className="mb-2 block text-xs font-bold text-[var(--ink)]">
                 <span className="flex items-center gap-2">Folder Icon</span>
               </label>
               <IconPicker
@@ -157,12 +154,12 @@ const FolderSettingsModal = ({
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+          <div className="mt-8 flex justify-end gap-3 border-t border-[var(--line)] pt-6">
             <button
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/50"
+              className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--surface-raised)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
@@ -175,7 +172,7 @@ const FolderSettingsModal = ({
                 icon={saving ? faSpinner : faFloppyDisk}
                 spin={saving}
               />
-              {saving ? "Saving..." : "Save Changes"}
+              {saving ? "Saving…" : "Save changes"}
             </button>
           </div>
         </form>

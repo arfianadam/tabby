@@ -1,4 +1,11 @@
-import { memo } from "react";
+import {
+  memo,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { useDndContext } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -35,6 +42,8 @@ const SortableFolderCard = memo(function SortableFolderCard({
   onEditBookmark,
   onOpenFolderSettings,
 }: SortableFolderCardProps) {
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const [gridRowSpan, setGridRowSpan] = useState(1);
   const { active } = useDndContext();
   const {
     attributes,
@@ -51,14 +60,59 @@ const SortableFolderCard = memo(function SortableFolderCard({
     disabled: !editingEnabled,
   });
 
+  const updateGridRowSpan = useCallback(() => {
+    const card = cardRef.current;
+    const grid = card?.parentElement;
+    const content = card?.firstElementChild;
+    if (!card || !grid || !content) {
+      return;
+    }
+
+    const gridStyles = window.getComputedStyle(grid);
+    const rowHeight = Number.parseFloat(gridStyles.gridAutoRows) || 1;
+    const visualGap = Number.parseFloat(gridStyles.columnGap) || 0;
+    const contentHeight = content.getBoundingClientRect().height;
+    setGridRowSpan(
+      Math.max(1, Math.ceil((contentHeight + visualGap) / rowHeight)),
+    );
+  }, []);
+
+  const setCardNodeRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      cardRef.current = node;
+      setNodeRef(node);
+    },
+    [setNodeRef],
+  );
+
+  useLayoutEffect(() => {
+    const card = cardRef.current;
+    const content = card?.firstElementChild;
+    if (!card || !content) {
+      return;
+    }
+
+    updateGridRowSpan();
+    const resizeObserver = new ResizeObserver(updateGridRowSpan);
+    resizeObserver.observe(content);
+    window.addEventListener("resize", updateGridRowSpan);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateGridRowSpan);
+    };
+  }, [updateGridRowSpan]);
+
   // Use dnd-kit's transition directly - it manages timing for drag and sort animations
-  const style = editingEnabled
-    ? {
-        transform: CSS.Translate.toString(transform),
-        transition,
-        zIndex: isDragging ? 10 : undefined,
-      }
-    : undefined;
+  const style: CSSProperties = {
+    gridRowEnd: `span ${gridRowSpan}`,
+    ...(editingEnabled
+      ? {
+          transform: CSS.Translate.toString(transform),
+          transition,
+          zIndex: isDragging ? 10 : undefined,
+        }
+      : {}),
+  };
 
   const isBookmarkOver =
     isOver &&
@@ -68,12 +122,10 @@ const SortableFolderCard = memo(function SortableFolderCard({
 
   return (
     <div
-      ref={setNodeRef}
+      ref={setCardNodeRef}
       style={style}
-      className={`relative rounded-2xl w-105 shrink-0 break-inside-avoid mb-4 ${
-        isBookmarkOver
-          ? "ring-2 ring-indigo-500 bg-indigo-50/50 dark:ring-indigo-600 dark:bg-indigo-900/20"
-          : ""
+      className={`relative min-w-0 break-inside-avoid rounded-[1.35rem] ${
+        isBookmarkOver ? "bg-orange-500/5 ring-2 ring-[var(--accent)]" : ""
       }`}
     >
       <FolderCard
