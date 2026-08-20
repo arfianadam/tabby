@@ -3,9 +3,11 @@ import { useEffect, useState } from "react";
 export function useDarkMode() {
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === "undefined") return false;
+    const storedTheme = localStorage.getItem("theme");
+
     return (
-      localStorage.theme === "dark" ||
-      (!("theme" in localStorage) &&
+      storedTheme === "dark" ||
+      (storedTheme === null &&
         window.matchMedia("(prefers-color-scheme: dark)").matches)
     );
   });
@@ -19,6 +21,7 @@ export function useDarkMode() {
       root.classList.remove("dark");
       localStorage.theme = "light";
     }
+    root.style.colorScheme = isDark ? "dark" : "light";
   }, [isDark]);
 
   const toggleDarkMode = () => setIsDark((prev) => !prev);
