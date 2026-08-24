@@ -98,7 +98,7 @@ const FolderCard = memo(function FolderCard({
   };
 
   return (
-    <article className="group/folder flex min-w-0 flex-col overflow-hidden rounded-[1.35rem] border border-[var(--line)] bg-[var(--surface-raised)] shadow-[0_10px_30px_rgba(36,38,33,0.045)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(36,38,33,0.09)] dark:shadow-none">
+    <article className="group/folder flex min-w-0 flex-col overflow-hidden rounded-[1.35rem] border border-[var(--line)] bg-[var(--surface-raised)] shadow-[0_10px_30px_rgba(36,38,33,0.045)] transition duration-200 hover:shadow-[0_16px_40px_rgba(36,38,33,0.09)] dark:shadow-none">
       <div className="flex min-h-16 items-center justify-between gap-2 border-b border-[var(--line)] p-3">
         {editingName ? (
           <form
