@@ -21,14 +21,8 @@ type AddBookmarkModalProps = {
   isEditing: boolean;
   bookmarkForm: BookmarkFormState;
   onBookmarkFormChange: (field: keyof BookmarkFormState, value: string) => void;
-  onAddBookmark: (
-    event: React.FormEvent<HTMLFormElement>,
-    folderId: string,
-  ) => void;
-  onAddSelectedTabs: (
-    folderId: string,
-    tabs: BrowserTab[],
-  ) => Promise<void> | void;
+  onAddBookmark: (folderId: string) => void;
+  onAddSelectedTabs: (folderId: string, tabs: BrowserTab[]) => void;
   savingBookmark: boolean;
   hasChromeTabsSupport: boolean;
   onClose: () => void;
@@ -159,7 +153,7 @@ const AddBookmarkModal = ({
     if (!selectedTabs.length) {
       return;
     }
-    void onAddSelectedTabs(folder.id, selectedTabs);
+    onAddSelectedTabs(folder.id, selectedTabs);
   };
 
   const titleId = `add-bookmark-${folder.id}`;
@@ -208,7 +202,10 @@ const AddBookmarkModal = ({
         </div>
         <form
           className="flex min-h-0 grow overflow-y-auto px-5 py-5 sm:px-6"
-          onSubmit={(event) => onAddBookmark(event, folder.id)}
+          onSubmit={(event) => {
+            event.preventDefault();
+            onAddBookmark(folder.id);
+          }}
         >
           <div className="flex min-h-0 grow flex-col gap-6 lg:flex-row">
             <div className="min-w-0 flex-1 space-y-4">

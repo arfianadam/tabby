@@ -2,86 +2,33 @@ import { onAuthStateChanged, type User } from "firebase/auth";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { auth } from "@/firebase/client";
 import {
-  clearCacheBootstrapRecord,
-  getCacheBootstrapRecord,
-  setCacheBootstrapFromSecret,
-} from "@/utils/cache/bootstrap";
-import { clearCachedCollections } from "@/utils/cache/collectionsCache";
+  getSessionSecret,
+  readPersistedSession,
+} from "@/firebase/persistedSession";
 import {
-  configureCacheEncryption,
-  configureCacheEncryptionKeyMaterial,
-} from "@/utils/cache/configuration";
-import { isEncryptionConfigured } from "@/utils/cache/crypto";
-import { setCachedUser, type CachedUser } from "@/utils/cache/userCache";
+  workspaceCache,
+  type WorkspaceUser,
+} from "@/utils/cache/workspaceCache";
 
-type PersistedAuthRecord = {
-  uid: string;
-  email?: string | null;
-  stsTokenManager?: { refreshToken?: string };
-};
+const BOOTSTRAP_TIMEOUT_MS = 2500;
 
-const toCachedUser = (
-  firebaseUser: Pick<User, "uid" | "email">,
-): CachedUser => ({
-  uid: firebaseUser.uid,
-  email: firebaseUser.email,
+const toCachedUser = ({ uid, email }: WorkspaceUser): WorkspaceUser => ({
+  uid,
+  email,
 });
-
-const getCacheSecret = (firebaseUser: User): string | null => {
-  const tokenManager = (
-    firebaseUser as User & {
-      stsTokenManager?: { refreshToken?: string };
-    }
-  ).stsTokenManager;
-  return tokenManager?.refreshToken ?? null;
-};
-
-const getPersistedAuthRecord = (): PersistedAuthRecord | null => {
-  if (typeof window === "undefined") {
-    return null;
-  }
-  try {
-    const apiKey = auth.app.options.apiKey;
-    const appName = auth.app.name ?? "[DEFAULT]";
-    if (!apiKey) {
-      return null;
-    }
-    const key = `firebase:authUser:${apiKey}:${appName}`;
-    const raw = window.localStorage.getItem(key);
-    if (!raw) {
-      return null;
-    }
-    return JSON.parse(raw) as PersistedAuthRecord;
-  } catch {
-    return null;
-  }
-};
-
-type CacheContext = {
-  uid: string;
-  email?: string | null;
-  secret?: string;
-  keyMaterial?: string;
-};
 
 export const useAuthState = () => {
   const initialFirebaseUser = auth.currentUser;
-  const [persistedAuthRecord] = useState<PersistedAuthRecord | null>(() =>
-    getPersistedAuthRecord(),
-  );
+  const [persistedSession] = useState(() => readPersistedSession());
 
   const initialCachedSummary = initialFirebaseUser
     ? toCachedUser(initialFirebaseUser)
-    : persistedAuthRecord?.uid &&
-        persistedAuthRecord.stsTokenManager?.refreshToken
-      ? {
-          uid: persistedAuthRecord.uid,
-          email: persistedAuthRecord.email,
-        }
+    : persistedSession
+      ? toCachedUser(persistedSession)
       : null;
 
   const [user, setUser] = useState<User | null>(initialFirebaseUser);
-  const [cachedUser, setCachedUserState] = useState<CachedUser | null>(
+  const [cachedUser, setCachedUserState] = useState<WorkspaceUser | null>(
     initialCachedSummary,
   );
   const [cacheReady, setCacheReady] = useState(false);
@@ -100,104 +47,65 @@ export const useAuthState = () => {
       if (!cancelled) {
         setInitializing(false);
       }
-    }, 2500);
+    }, BOOTSTRAP_TIMEOUT_MS);
 
-    const applyCacheContext = async (
-      context: CacheContext | null,
-      options?: { clearCollections?: boolean },
-    ) => {
-      if (!context) {
-        await configureCacheEncryption(null, null);
-        await setCachedUser(null);
-        await clearCacheBootstrapRecord();
-        if (options?.clearCollections && lastCachedUidRef.current) {
-          await clearCachedCollections(lastCachedUidRef.current);
-        }
-        lastCachedUidRef.current = null;
-        if (!cancelled) {
-          setCachedUserState(null);
-          setCacheReady(false);
-        }
-        return;
+    const finishBootstrap = () => {
+      if (!cancelled) {
+        window.clearTimeout(bootstrapTimeout);
+        setInitializing(false);
       }
+    };
 
-      try {
-        if (context.keyMaterial) {
-          await configureCacheEncryptionKeyMaterial(
-            context.uid,
-            context.keyMaterial,
-          );
-        } else {
-          await configureCacheEncryption(context.uid, context.secret ?? null);
-          if (context.secret) {
-            await setCacheBootstrapFromSecret({
-              uid: context.uid,
-              email: context.email,
-              secret: context.secret,
-            });
-          }
-        }
-        const summary: CachedUser = {
-          uid: context.uid,
-          email: context.email,
-        };
-        await setCachedUser(summary);
-        if (!cancelled) {
-          setCachedUserState(summary);
-          setCacheReady(isEncryptionConfigured());
-          lastCachedUidRef.current = summary.uid;
-        }
-      } catch {
-        if (!cancelled) {
-          setCacheReady(false);
-        }
+    const adoptCache = (summary: WorkspaceUser, ready: boolean) => {
+      if (!cancelled) {
+        setCachedUserState(summary);
+        setCacheReady(ready);
+        lastCachedUidRef.current = summary.uid;
+      }
+    };
+
+    const openCache = async (summary: WorkspaceUser, secret: string) => {
+      const ready = await workspaceCache.open(summary, secret);
+      adoptCache(summary, ready);
+      return ready;
+    };
+
+    const closeCache = async () => {
+      await workspaceCache.close({
+        clearCollectionsFor: lastCachedUidRef.current,
+      });
+      lastCachedUidRef.current = null;
+      if (!cancelled) {
+        setCachedUserState(null);
+        setCacheReady(false);
       }
     };
 
     const bootstrap = async () => {
       if (initialFirebaseUser) {
-        const secret = getCacheSecret(initialFirebaseUser);
+        const secret = getSessionSecret(initialFirebaseUser);
         if (secret) {
-          await applyCacheContext({
-            uid: initialFirebaseUser.uid,
-            email: initialFirebaseUser.email,
-            secret,
-          });
+          await openCache(toCachedUser(initialFirebaseUser), secret);
         } else if (!cancelled) {
           setCachedUserState(toCachedUser(initialFirebaseUser));
         }
         return;
       }
 
-      if (
-        persistedAuthRecord?.uid &&
-        persistedAuthRecord.stsTokenManager?.refreshToken
-      ) {
-        await applyCacheContext({
-          uid: persistedAuthRecord.uid,
-          email: persistedAuthRecord.email,
-          secret: persistedAuthRecord.stsTokenManager.refreshToken,
-        });
-        if (!cancelled && isEncryptionConfigured()) {
-          window.clearTimeout(bootstrapTimeout);
-          setInitializing(false);
+      if (persistedSession) {
+        const { refreshToken } = persistedSession;
+        if (await openCache(toCachedUser(persistedSession), refreshToken)) {
+          finishBootstrap();
         }
         return;
       }
 
-      const bootstrapRecord = await getCacheBootstrapRecord();
-      if (!bootstrapRecord) {
-        return;
-      }
-
-      await applyCacheContext({
-        uid: bootstrapRecord.uid,
-        email: bootstrapRecord.email,
-        keyMaterial: bootstrapRecord.keyMaterial,
-      });
-      if (!cancelled && isEncryptionConfigured()) {
-        window.clearTimeout(bootstrapTimeout);
-        setInitializing(false);
+      const restored = await workspaceCache.restore();
+      if (restored) {
+        adoptCache(restored.user, restored.ready);
+        if (restored.ready) {
+          finishBootstrap();
+        }
       }
     };
 
@@ -208,39 +116,27 @@ export const useAuthState = () => {
       (nextUser) => {
         window.clearTimeout(bootstrapTimeout);
         setUser(nextUser);
+        const settle = () => {
+          if (!cancelled) {
+            setInitializing(false);
+          }
+        };
         if (!nextUser) {
-          void applyCacheContext(null, { clearCollections: true }).finally(
-            () => {
-              if (!cancelled) {
-                setInitializing(false);
-              }
-            },
-          );
+          void closeCache().finally(settle);
           return;
         }
 
-        const secret = getCacheSecret(nextUser);
+        const secret = getSessionSecret(nextUser);
         if (!secret) {
           if (!cancelled) {
             setCachedUserState(toCachedUser(nextUser));
             setCacheReady(false);
-            setInitializing(false);
           }
+          settle();
           return;
         }
 
-        void applyCacheContext(
-          {
-            uid: nextUser.uid,
-            email: nextUser.email,
-            secret,
-          },
-          { clearCollections: false },
-        ).finally(() => {
-          if (!cancelled) {
-            setInitializing(false);
-          }
-        });
+        void openCache(toCachedUser(nextUser), secret).finally(settle);
       },
       (err) => {
         window.clearTimeout(bootstrapTimeout);

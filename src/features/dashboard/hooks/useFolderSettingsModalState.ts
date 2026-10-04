@@ -5,37 +5,50 @@ import {
 } from "../components/types";
 import type { Folder } from "@/types";
 import { DEFAULT_FOLDER_ICON } from "@/components/IconPicker";
+import type { WorkspaceEditing } from "./useWorkspaceEditing";
 
 export const useFolderSettingsModalState = (
   selectedCollectionId: string | null,
+  editing: WorkspaceEditing,
 ) => {
-  const [settingsModalFolderId, setSettingsModalFolderId] = useState<
-    string | null
-  >(null);
-  const [folderSettingsForm, setFolderSettingsForm] =
-    useState<FolderSettingsFormState>(getInitialFolderSettingsFormState);
+  const { canEdit, ensureCanEdit, updateFolderSettings } = editing;
+  const [folderId, setFolderId] = useState<string | null>(null);
+  const [form, setForm] = useState<FolderSettingsFormState>(
+    getInitialFolderSettingsFormState,
+  );
+
+  const close = useCallback(() => {
+    setFolderId(null);
+    setForm(getInitialFolderSettingsFormState());
+  }, []);
 
   useEffect(() => {
-    setSettingsModalFolderId(null);
-    setFolderSettingsForm(getInitialFolderSettingsFormState());
-  }, [selectedCollectionId]);
+    close();
+  }, [selectedCollectionId, close]);
 
-  const closeFolderSettingsModal = useCallback(() => {
-    setSettingsModalFolderId(null);
-    setFolderSettingsForm(getInitialFolderSettingsFormState());
-  }, []);
+  useEffect(() => {
+    if (!canEdit) {
+      close();
+    }
+  }, [canEdit, close]);
 
-  const openFolderSettingsModal = useCallback((folder: Folder) => {
-    setSettingsModalFolderId(folder.id);
-    setFolderSettingsForm({
-      name: folder.name,
-      icon: folder.icon || DEFAULT_FOLDER_ICON,
-    });
-  }, []);
+  const open = useCallback(
+    (folder: Folder) => {
+      if (!ensureCanEdit()) {
+        return;
+      }
+      setFolderId(folder.id);
+      setForm({
+        name: folder.name,
+        icon: folder.icon || DEFAULT_FOLDER_ICON,
+      });
+    },
+    [ensureCanEdit],
+  );
 
-  const handleFolderSettingsFormChange = useCallback(
+  const changeField = useCallback(
     (field: keyof FolderSettingsFormState, value: string) => {
-      setFolderSettingsForm((prev) => ({
+      setForm((prev) => ({
         ...prev,
         [field]: value,
       }));
@@ -43,11 +56,16 @@ export const useFolderSettingsModalState = (
     [],
   );
 
-  return {
-    settingsModalFolderId,
-    folderSettingsForm,
-    openFolderSettingsModal,
-    closeFolderSettingsModal,
-    handleFolderSettingsFormChange,
-  };
+  const save = useCallback(
+    (targetFolderId: string) => {
+      void (async () => {
+        if (await updateFolderSettings(targetFolderId, form.name, form.icon)) {
+          close();
+        }
+      })();
+    },
+    [form, updateFolderSettings, close],
+  );
+
+  return { folderId, form, open, close, changeField, save };
 };

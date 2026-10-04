@@ -5,6 +5,7 @@ import {
   dangerEditorControlButtonClasses,
   editorControlButtonClasses,
 } from "../constants";
+import { needsTabsNavigation, openWithTabs } from "@/utils/chrome";
 
 type BookmarkCardProps = {
   folderId: string;
@@ -27,7 +28,8 @@ const BookmarkCard = ({
 }: BookmarkCardProps) => {
   const fallbackInitial = (() => {
     const source =
-      bookmark.title.trim() || bookmark.url.replace(/^https?:\/\//i, "");
+      bookmark.title.trim() ||
+      bookmark.url.replace(/^[a-z][a-z0-9+.-]*:\/\//i, "");
     return source ? source.charAt(0).toUpperCase() : "•";
   })();
   const bookmarkMeta = (() => {
@@ -41,11 +43,28 @@ const BookmarkCard = ({
     }
   })();
 
+  const handleOpen = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!needsTabsNavigation(bookmark.url)) {
+      return;
+    }
+    event.preventDefault();
+    openWithTabs(
+      bookmark.url,
+      event.button === 1 || event.metaKey || event.ctrlKey,
+    );
+  };
+
   return (
     <article className="group relative rounded-xl border border-transparent bg-transparent transition-all hover:border-[var(--line)] hover:bg-[var(--surface-muted)] focus-within:border-[var(--accent)] focus-within:bg-[var(--surface-muted)]">
       <a
         href={bookmark.url}
         target="_self"
+        onClick={handleOpen}
+        onAuxClick={(event) => {
+          if (event.button === 1) {
+            handleOpen(event);
+          }
+        }}
         className={`block h-full rounded-xl py-2 ${
           allowSync ? "pr-20 pl-12" : "px-2"
         } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/30`}

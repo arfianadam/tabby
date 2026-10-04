@@ -1,29 +1,23 @@
 import { signOut } from "firebase/auth";
 import { useEffect, useState, useCallback } from "react";
 import { auth } from "@/firebase/client";
-import { useCollections } from "@/hooks/useCollections";
+import { useCollectionSync } from "./hooks/useCollectionSync";
 import { useSelectedCollection } from "./hooks/useSelectedCollection";
 import { useBookmarkModalState } from "./hooks/useBookmarkModalState";
 import { useFolderSettingsModalState } from "./hooks/useFolderSettingsModalState";
 import { useDashboardNotifications } from "./hooks/useDashboardNotifications";
-import { useCollectionActions } from "./hooks/useCollectionActions";
-import { useFolderActions } from "./hooks/useFolderActions";
-import { useBookmarkActions } from "./hooks/useBookmarkActions";
-import type { Bookmark, BookmarkDraft, Collection, Folder } from "@/types";
+import { useWorkspaceEditing } from "./hooks/useWorkspaceEditing";
 import CollectionDetails from "./components/CollectionDetails";
 import CollectionsSidebar from "./components/CollectionsSidebar";
 import DashboardToasts from "./components/DashboardToasts";
 import FolderSettingsModal from "./components/FolderSettingsModal";
 import { panelClass } from "./components/constants";
 import type { DashboardUser } from "./components/types";
-import { hasChromeTabsSupport } from "@/utils/chrome";
-import type { BrowserTab } from "@/utils/chrome";
 
 type DashboardProps = {
   user: DashboardUser;
   allowSync: boolean;
-  initialCollections?: Collection[];
-  initialCollectionsLoaded?: boolean;
+  cacheReady: boolean;
 };
 
 const SIDEBAR_COLLAPSED_TRACK = "5rem";
@@ -37,43 +31,19 @@ const getInitialSidebarCollapsed = () => {
   }
 };
 
-const Dashboard = ({
-  user,
-  allowSync,
-  initialCollections = [],
-  initialCollectionsLoaded = false,
-}: DashboardProps) => {
-  const { collections, syncSource, loading, error } = useCollections(
-    allowSync ? user.uid : undefined,
-    {
-      initialData: initialCollections,
-      initialDataLoaded: initialCollectionsLoaded,
-      cacheKey: allowSync ? user.uid : undefined,
-    },
-  );
+const Dashboard = ({ user, allowSync, cacheReady }: DashboardProps) => {
+  const {
+    collections,
+    source: syncSource,
+    loading,
+    error,
+  } = useCollectionSync({ uid: user.uid, allowSync, cacheReady });
   const [editMode, setEditMode] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     getInitialSidebarCollapsed,
   );
-  const editingEnabled = allowSync && editMode;
   const { selectedCollectionId, setSelectedCollectionId, selectedCollection } =
     useSelectedCollection(collections);
-  const {
-    bookmarkModalFolderId,
-    editingBookmarkId,
-    bookmarkForm,
-    openBookmarkModal,
-    openEditBookmarkModal,
-    closeBookmarkModal,
-    handleBookmarkFormChange,
-  } = useBookmarkModalState(selectedCollectionId);
-  const {
-    settingsModalFolderId,
-    folderSettingsForm,
-    openFolderSettingsModal,
-    closeFolderSettingsModal,
-    handleFolderSettingsFormChange,
-  } = useFolderSettingsModalState(selectedCollectionId);
   const {
     banner,
     renderedBanner,
@@ -92,47 +62,24 @@ const Dashboard = ({
     Boolean(error),
   );
 
-  const {
-    creatingCollection,
-    guardSync,
-    createCollection: createCollectionAction,
-    deleteCollection: deleteCollectionAction,
-  } = useCollectionActions(user.uid, allowSync, notify);
-
-  const {
-    creatingFolder,
-    createFolder: createFolderAction,
-    deleteFolder: deleteFolderAction,
-    renameFolder: renameFolderAction,
-    reorderFolders: reorderFoldersAction,
-    updateFolderSettings: updateFolderSettingsAction,
-  } = useFolderActions(user.uid, allowSync, notify);
-
-  const [savingFolderSettings, setSavingFolderSettings] = useState(false);
-
-  const {
-    savingBookmark,
-    saveBookmarks,
-    updateBookmark,
-    deleteBookmark: deleteBookmarkAction,
-    reorderBookmarks: reorderBookmarksAction,
-    moveBookmark: moveBookmarkAction,
-  } = useBookmarkActions(user.uid, allowSync, notify);
+  const editing = useWorkspaceEditing({
+    uid: user.uid,
+    notify,
+    allowSync,
+    editMode,
+    collection: selectedCollection,
+  });
+  const bookmarkModal = useBookmarkModalState(selectedCollectionId, editing);
+  const folderSettings = useFolderSettingsModalState(
+    selectedCollectionId,
+    editing,
+  );
 
   useEffect(() => {
     if (!allowSync) {
-      closeBookmarkModal();
-      closeFolderSettingsModal();
       setEditMode(false);
     }
-  }, [allowSync, closeBookmarkModal, closeFolderSettingsModal]);
-
-  useEffect(() => {
-    if (!editMode) {
-      closeBookmarkModal();
-      closeFolderSettingsModal();
-    }
-  }, [editMode, closeBookmarkModal, closeFolderSettingsModal]);
+  }, [allowSync]);
 
   useEffect(() => {
     localStorage.setItem(
@@ -147,292 +94,17 @@ const Dashboard = ({
     }
   }, [error, notify, syncSource]);
 
+  const { createCollection } = editing;
   const handleCreateCollection = useCallback(
     (name: string) => {
-      if (!editingEnabled) {
-        return;
-      }
       void (async () => {
-        const id = await createCollectionAction(name);
+        const id = await createCollection(name);
         if (id) {
           setSelectedCollectionId(id);
         }
       })();
     },
-    [editingEnabled, createCollectionAction, setSelectedCollectionId],
-  );
-
-  const handleDeleteCollection = useCallback(
-    (collection: Collection) => {
-      if (!editingEnabled) {
-        return;
-      }
-      if (
-        !window.confirm(
-          `Delete collection "${collection.name}" and all folders within it?`,
-        )
-      ) {
-        return;
-      }
-      void deleteCollectionAction(collection);
-    },
-    [editingEnabled, deleteCollectionAction],
-  );
-
-  const handleCreateFolder = useCallback(
-    (name: string) => {
-      if (!editingEnabled) {
-        return;
-      }
-      void (async () => {
-        await createFolderAction(selectedCollection, name);
-      })();
-    },
-    [editingEnabled, createFolderAction, selectedCollection],
-  );
-
-  const handleDeleteFolder = useCallback(
-    (folder: Folder) => {
-      if (!editingEnabled) {
-        return;
-      }
-      if (
-        !window.confirm(
-          `Delete folder "${folder.name}" and all of its bookmarks?`,
-        )
-      ) {
-        return;
-      }
-      void deleteFolderAction(selectedCollection, folder);
-    },
-    [editingEnabled, deleteFolderAction, selectedCollection],
-  );
-
-  const handleRenameFolder = useCallback(
-    (folder: Folder, nextName: string) => {
-      if (!editingEnabled) {
-        return Promise.resolve(false);
-      }
-      return renameFolderAction(selectedCollection, folder, nextName);
-    },
-    [editingEnabled, renameFolderAction, selectedCollection],
-  );
-
-  const handleOpenFolderSettings = useCallback(
-    (folder: Folder) => {
-      if (!editingEnabled) {
-        return;
-      }
-      if (!selectedCollection) {
-        notify("Create or select a collection first.", "danger");
-        return;
-      }
-      if (guardSync()) {
-        return;
-      }
-      openFolderSettingsModal(folder);
-    },
-    [
-      editingEnabled,
-      selectedCollection,
-      guardSync,
-      openFolderSettingsModal,
-      notify,
-    ],
-  );
-
-  const handleSaveFolderSettings = useCallback(
-    (event: React.FormEvent<HTMLFormElement>, folderId: string) => {
-      event.preventDefault();
-      if (!editingEnabled) {
-        return;
-      }
-      const folder = selectedCollection?.folders.find((f) => f.id === folderId);
-      if (!folder) {
-        return;
-      }
-      void (async () => {
-        setSavingFolderSettings(true);
-        try {
-          const success = await updateFolderSettingsAction(
-            selectedCollection,
-            folder,
-            folderSettingsForm.name,
-            folderSettingsForm.icon,
-          );
-          if (success) {
-            closeFolderSettingsModal();
-          }
-        } finally {
-          setSavingFolderSettings(false);
-        }
-      })();
-    },
-    [
-      editingEnabled,
-      selectedCollection,
-      folderSettingsForm,
-      updateFolderSettingsAction,
-      closeFolderSettingsModal,
-    ],
-  );
-
-  const handleOpenBookmarkModal = useCallback(
-    (folderId: string) => {
-      if (!editingEnabled) {
-        return;
-      }
-      if (!selectedCollection) {
-        notify("Create or select a collection first.", "danger");
-        return;
-      }
-      if (guardSync()) {
-        return;
-      }
-      openBookmarkModal(folderId);
-    },
-    [editingEnabled, selectedCollection, guardSync, openBookmarkModal, notify],
-  );
-
-  const handleEditBookmark = useCallback(
-    (folderId: string, bookmark: Bookmark) => {
-      if (!editingEnabled) {
-        return;
-      }
-      if (!selectedCollection) {
-        notify("Create or select a collection first.", "danger");
-        return;
-      }
-      if (guardSync()) {
-        return;
-      }
-      openEditBookmarkModal(folderId, bookmark);
-    },
-    [
-      editingEnabled,
-      selectedCollection,
-      guardSync,
-      openEditBookmarkModal,
-      notify,
-    ],
-  );
-
-  const handleAddBookmark = useCallback(
-    (event: React.FormEvent<HTMLFormElement>, folderId: string) => {
-      event.preventDefault();
-      if (!editingEnabled) {
-        return;
-      }
-      void (async () => {
-        if (editingBookmarkId) {
-          const success = await updateBookmark(
-            selectedCollection,
-            folderId,
-            editingBookmarkId,
-            bookmarkForm,
-          );
-          if (success) {
-            closeBookmarkModal();
-          }
-        } else {
-          const result = await saveBookmarks(selectedCollection, folderId, [
-            bookmarkForm,
-          ]);
-          if (result.success) {
-            closeBookmarkModal();
-          }
-        }
-      })();
-    },
-    [
-      editingEnabled,
-      editingBookmarkId,
-      updateBookmark,
-      selectedCollection,
-      bookmarkForm,
-      closeBookmarkModal,
-      saveBookmarks,
-    ],
-  );
-
-  const handleAddBookmarksFromTabs = useCallback(
-    (folderId: string, tabsToAdd: BrowserTab[]) => {
-      if (!editingEnabled) {
-        return;
-      }
-      if (!tabsToAdd.length) {
-        return;
-      }
-      const drafts: BookmarkDraft[] = tabsToAdd.map((tab) => ({
-        title: tab.title,
-        url: tab.url,
-      }));
-      void (async () => {
-        const result = await saveBookmarks(
-          selectedCollection,
-          folderId,
-          drafts,
-        );
-        if (result.success) {
-          closeBookmarkModal();
-        }
-      })();
-    },
-    [editingEnabled, saveBookmarks, selectedCollection, closeBookmarkModal],
-  );
-
-  const handleDeleteBookmark = useCallback(
-    (folderId: string, bookmarkId: string) => {
-      if (!editingEnabled) {
-        return;
-      }
-      void deleteBookmarkAction(selectedCollection, folderId, bookmarkId);
-    },
-    [editingEnabled, deleteBookmarkAction, selectedCollection],
-  );
-
-  const handleReorderFolders = useCallback(
-    (orderedFolderIds: string[]) => {
-      if (!editingEnabled) {
-        return;
-      }
-      void reorderFoldersAction(selectedCollection, orderedFolderIds);
-    },
-    [editingEnabled, reorderFoldersAction, selectedCollection],
-  );
-
-  const handleReorderBookmarks = useCallback(
-    (folderId: string, orderedBookmarkIds: string[]) => {
-      if (!editingEnabled) {
-        return;
-      }
-      void reorderBookmarksAction(
-        selectedCollection,
-        folderId,
-        orderedBookmarkIds,
-      );
-    },
-    [editingEnabled, reorderBookmarksAction, selectedCollection],
-  );
-
-  const handleMoveBookmark = useCallback(
-    (
-      bookmarkId: string,
-      sourceFolderId: string,
-      targetFolderId: string,
-      targetIndex: number,
-    ) => {
-      if (!editingEnabled) {
-        return;
-      }
-      void moveBookmarkAction(selectedCollection, {
-        bookmarkId,
-        sourceFolderId,
-        targetFolderId,
-        targetIndex,
-      });
-    },
-    [editingEnabled, moveBookmarkAction, selectedCollection],
+    [createCollection, setSelectedCollectionId],
   );
 
   const noCollections = !loading && collections.length === 0;
@@ -460,10 +132,10 @@ const Dashboard = ({
           editMode={editMode}
           collections={collections}
           selectedCollectionId={selectedCollectionId}
-          creatingCollection={creatingCollection}
+          creatingCollection={editing.creatingCollection}
           onCreateCollection={handleCreateCollection}
           onSelectCollection={setSelectedCollectionId}
-          onDeleteCollection={handleDeleteCollection}
+          onDeleteCollection={editing.deleteCollection}
           noCollections={noCollections}
           loading={loading}
           user={user}
@@ -475,29 +147,9 @@ const Dashboard = ({
         {selectedCollection ? (
           <CollectionDetails
             collection={selectedCollection}
-            allowSync={allowSync}
-            editMode={editMode}
-            onDeleteCollection={handleDeleteCollection}
-            creatingFolder={creatingFolder}
-            onCreateFolder={handleCreateFolder}
-            onDeleteFolder={handleDeleteFolder}
-            onRenameFolder={handleRenameFolder}
-            onOpenBookmarkModal={handleOpenBookmarkModal}
-            onCloseBookmarkModal={closeBookmarkModal}
-            bookmarkModalFolderId={bookmarkModalFolderId}
-            bookmarkForm={bookmarkForm}
-            onBookmarkFormChange={handleBookmarkFormChange}
-            onAddBookmark={handleAddBookmark}
-            onAddSelectedTabs={handleAddBookmarksFromTabs}
-            savingBookmark={savingBookmark}
-            hasChromeTabsSupport={hasChromeTabsSupport}
-            onDeleteBookmark={handleDeleteBookmark}
-            onReorderFolders={handleReorderFolders}
-            onReorderBookmarks={handleReorderBookmarks}
-            onMoveBookmark={handleMoveBookmark}
-            isEditing={!!editingBookmarkId}
-            onEditBookmark={handleEditBookmark}
-            onOpenFolderSettings={handleOpenFolderSettings}
+            editing={editing}
+            bookmarkModal={bookmarkModal}
+            onOpenFolderSettings={folderSettings.open}
           />
         ) : (
           <main className={`${panelClass} min-h-0 min-w-0 p-6`}>
@@ -523,16 +175,16 @@ const Dashboard = ({
       <FolderSettingsModal
         folder={
           selectedCollection?.folders.find(
-            (f) => f.id === settingsModalFolderId,
+            (f) => f.id === folderSettings.folderId,
           ) ?? null
         }
-        open={Boolean(settingsModalFolderId) && editingEnabled}
-        allowSync={editingEnabled}
-        folderForm={folderSettingsForm}
-        onFolderFormChange={handleFolderSettingsFormChange}
-        onSave={handleSaveFolderSettings}
-        saving={savingFolderSettings}
-        onClose={closeFolderSettingsModal}
+        open={Boolean(folderSettings.folderId) && editing.canEdit}
+        allowSync={editing.canEdit}
+        folderForm={folderSettings.form}
+        onFolderFormChange={folderSettings.changeField}
+        onSave={folderSettings.save}
+        saving={editing.savingFolderSettings}
+        onClose={folderSettings.close}
       />
     </div>
   );

@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Banner, BannerTone } from "../components/types";
 import {
-  getSyncToastPlan,
+  createSyncToastTracker,
   type CollectionSyncSource,
   type SyncToastKind,
 } from "../syncNotification";
@@ -22,7 +22,7 @@ export const useDashboardNotifications = (
   const [syncToastKind, setSyncToastKind] =
     useState<SyncToastKind>("cache-warning");
   const [isOnline, setIsOnline] = useState(getInitialOnlineStatus);
-  const cacheWarningShownRef = useRef(false);
+  const [syncToasts] = useState(createSyncToastTracker);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -36,33 +36,32 @@ export const useDashboardNotifications = (
   }, []);
 
   useEffect(() => {
-    const plan = getSyncToastPlan({
+    const step = syncToasts.next({
       source: syncSource,
-      cacheWarningShown: cacheWarningShownRef.current,
       allowSync,
       hasSyncError,
       isOnline,
       isLoading,
     });
-    if (!plan) {
-      if (isLoading) {
-        cacheWarningShownRef.current = false;
-        setSyncToastVisible(false);
-      }
+    if (!step) {
+      return;
+    }
+    if (step.type === "hide") {
+      setSyncToastVisible(false);
       return;
     }
 
     let hideTimeout: number | undefined;
     const showToast = () => {
-      cacheWarningShownRef.current = plan.kind === "cache-warning";
-      setSyncToastKind(plan.kind);
+      syncToasts.shown(step.kind);
+      setSyncToastKind(step.kind);
       setSyncToastShouldRender(true);
       setSyncToastVisible(true);
       hideTimeout = window.setTimeout(() => {
         setSyncToastVisible(false);
-      }, 4000);
+      }, step.hideAfterMs);
     };
-    const showTimeout = window.setTimeout(showToast, plan.delayMs);
+    const showTimeout = window.setTimeout(showToast, step.delayMs);
 
     return () => {
       window.clearTimeout(showTimeout);
@@ -70,7 +69,7 @@ export const useDashboardNotifications = (
         window.clearTimeout(hideTimeout);
       }
     };
-  }, [allowSync, hasSyncError, isLoading, isOnline, syncSource]);
+  }, [allowSync, hasSyncError, isLoading, isOnline, syncSource, syncToasts]);
 
   useEffect(() => {
     if (!banner) {

@@ -25,8 +25,9 @@ import {
   faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import type { Bookmark, Collection, Folder } from "@/types";
-import type { BookmarkFormState } from "./types";
-import type { BrowserTab } from "@/utils/chrome";
+import { hasChromeTabsSupport } from "@/utils/chrome";
+import type { WorkspaceEditing } from "../hooks/useWorkspaceEditing";
+import type { BookmarkModal } from "../hooks/useBookmarkModalState";
 import { useBookmarkFavicons } from "@/hooks/useBookmarkFavicons";
 import { useFolderOrdering } from "../hooks/useFolderOrdering";
 import { panelClass, subtleButtonClasses } from "./constants";
@@ -75,70 +76,18 @@ const collisionDetectionStrategy: CollisionDetection = (args) => {
 
 type CollectionDetailsProps = {
   collection: Collection;
-  allowSync: boolean;
-  editMode: boolean;
-  onDeleteCollection: (collection: Collection) => void;
-  creatingFolder: boolean;
-  onCreateFolder: (name: string) => void;
-  onDeleteFolder: (folder: Folder) => void;
-  onRenameFolder: (folder: Folder, name: string) => Promise<boolean>;
-  onOpenBookmarkModal: (folderId: string) => void;
-  onCloseBookmarkModal: () => void;
-  bookmarkModalFolderId: string | null;
-  bookmarkForm: BookmarkFormState;
-  onBookmarkFormChange: (field: keyof BookmarkFormState, value: string) => void;
-  onAddBookmark: (
-    event: React.FormEvent<HTMLFormElement>,
-    folderId: string,
-  ) => void;
-  onAddSelectedTabs: (folderId: string, tabs: BrowserTab[]) => void;
-  savingBookmark: boolean;
-  hasChromeTabsSupport: boolean;
-  onDeleteBookmark: (folderId: string, bookmarkId: string) => void;
-  onReorderFolders: (orderedFolderIds: string[]) => void;
-  onReorderBookmarks: (folderId: string, orderedBookmarkIds: string[]) => void;
-  onMoveBookmark: (
-    bookmarkId: string,
-    sourceFolderId: string,
-    targetFolderId: string,
-    targetIndex: number,
-  ) => void;
-  isEditing: boolean;
-  onEditBookmark: (folderId: string, bookmark: Bookmark) => void;
+  editing: WorkspaceEditing;
+  bookmarkModal: BookmarkModal;
   onOpenFolderSettings: (folder: Folder) => void;
 };
 
-const CollectionDetails = memo(function CollectionDetails(
-  props: CollectionDetailsProps,
-) {
-  const {
-    collection,
-    allowSync,
-    editMode,
-    onDeleteCollection,
-    creatingFolder,
-    onCreateFolder,
-    onDeleteFolder,
-    onRenameFolder,
-    onOpenBookmarkModal,
-    onCloseBookmarkModal,
-    bookmarkModalFolderId,
-    bookmarkForm,
-    onBookmarkFormChange,
-    onAddBookmark,
-    onAddSelectedTabs,
-    savingBookmark,
-    hasChromeTabsSupport,
-    onDeleteBookmark,
-    onReorderFolders,
-    onReorderBookmarks,
-    onMoveBookmark,
-    isEditing,
-    onEditBookmark,
-    onOpenFolderSettings,
-  } = props;
-
-  const editingEnabled = allowSync && editMode;
+const CollectionDetails = memo(function CollectionDetails({
+  collection,
+  editing,
+  bookmarkModal,
+  onOpenFolderSettings,
+}: CollectionDetailsProps) {
+  const editingEnabled = editing.canEdit;
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 6 },
@@ -146,7 +95,7 @@ const CollectionDetails = memo(function CollectionDetails(
   );
 
   const activeBookmarkFolder =
-    collection.folders.find((folder) => folder.id === bookmarkModalFolderId) ??
+    collection.folders.find((folder) => folder.id === bookmarkModal.folderId) ??
     null;
   const allBookmarks = useMemo<Bookmark[]>(
     () => collection.folders.flatMap((folder) => folder.bookmarks),
@@ -239,7 +188,7 @@ const CollectionDetails = memo(function CollectionDetails(
       }
       const reordered = arrayMove(folderOrder, oldIndex, newIndex);
       setFolderOrder(reordered);
-      onReorderFolders(reordered);
+      void editing.reorderFolders(reordered);
     } else if (type === "bookmark") {
       const bookmarkId = String(active.id);
       // Use the current folderId (may have been updated during drag)
@@ -257,7 +206,7 @@ const CollectionDetails = memo(function CollectionDetails(
         const folder = foldersToRender.find((f) => f.id === currentFolderId);
         if (folder) {
           const reorderedIds = folder.bookmarks.map((b) => b.id);
-          onReorderBookmarks(currentFolderId, reorderedIds);
+          void editing.reorderBookmarks(currentFolderId, reorderedIds);
         }
       } else {
         // Cross-folder move - get target index from local state
@@ -268,7 +217,7 @@ const CollectionDetails = memo(function CollectionDetails(
           const targetIndex = targetFolder.bookmarks.findIndex(
             (b) => b.id === bookmarkId,
           );
-          onMoveBookmark(
+          void editing.moveBookmark(
             bookmarkId,
             originalFolder,
             currentFolderId,
@@ -309,7 +258,7 @@ const CollectionDetails = memo(function CollectionDetails(
                 <button
                   className={`${subtleButtonClasses} size-9 border-transparent bg-transparent p-0 text-rose-500 hover:border-rose-500/20 hover:bg-rose-500/8 hover:text-rose-600`}
                   type="button"
-                  onClick={() => onDeleteCollection(collection)}
+                  onClick={() => void editing.deleteCollection(collection)}
                   disabled={!editingEnabled}
                   aria-label={`Delete ${collection.name}`}
                   title="Delete collection"
@@ -322,8 +271,8 @@ const CollectionDetails = memo(function CollectionDetails(
           {editingEnabled && (
             <div className="mt-5">
               <CreateFolderForm
-                onCreateFolder={onCreateFolder}
-                creatingFolder={creatingFolder}
+                onCreateFolder={editing.createFolder}
+                creatingFolder={editing.creatingFolder}
                 disabled={!collection || !editingEnabled}
               />
             </div>
@@ -367,12 +316,12 @@ const CollectionDetails = memo(function CollectionDetails(
                       bookmarks={folder.bookmarks}
                       allowSync={editingEnabled}
                       editingEnabled={editingEnabled}
-                      onOpenBookmarkModal={onOpenBookmarkModal}
-                      onDeleteFolder={onDeleteFolder}
-                      onRenameFolder={onRenameFolder}
-                      onDeleteBookmark={onDeleteBookmark}
+                      onOpenBookmarkModal={bookmarkModal.open}
+                      onDeleteFolder={editing.deleteFolder}
+                      onRenameFolder={editing.renameFolder}
+                      onDeleteBookmark={editing.deleteBookmark}
                       faviconMap={faviconMap}
-                      onEditBookmark={onEditBookmark}
+                      onEditBookmark={bookmarkModal.openEdit}
                       onOpenFolderSettings={onOpenFolderSettings}
                     />
                   ))}
@@ -387,14 +336,14 @@ const CollectionDetails = memo(function CollectionDetails(
         folder={activeBookmarkFolder}
         open={Boolean(activeBookmarkFolder) && editingEnabled}
         allowSync={editingEnabled}
-        isEditing={isEditing}
-        bookmarkForm={bookmarkForm}
-        onBookmarkFormChange={onBookmarkFormChange}
-        onAddBookmark={onAddBookmark}
-        onAddSelectedTabs={onAddSelectedTabs}
-        savingBookmark={savingBookmark}
+        isEditing={bookmarkModal.isEditing}
+        bookmarkForm={bookmarkModal.form}
+        onBookmarkFormChange={bookmarkModal.changeField}
+        onAddBookmark={bookmarkModal.submit}
+        onAddSelectedTabs={bookmarkModal.addTabs}
+        savingBookmark={editing.savingBookmark}
         hasChromeTabsSupport={hasChromeTabsSupport}
-        onClose={onCloseBookmarkModal}
+        onClose={bookmarkModal.close}
       />
     </main>
   );

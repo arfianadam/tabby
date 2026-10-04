@@ -20,7 +20,7 @@ type FolderSettingsModalProps = {
     field: keyof FolderSettingsFormState,
     value: string,
   ) => void;
-  onSave: (event: React.FormEvent<HTMLFormElement>, folderId: string) => void;
+  onSave: (folderId: string) => void;
   saving: boolean;
   onClose: () => void;
 };
@@ -119,7 +119,13 @@ const FolderSettingsModal = ({
         </div>
 
         {/* Form */}
-        <form className="p-6 pt-12" onSubmit={(e) => onSave(e, folder.id)}>
+        <form
+          className="p-6 pt-12"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSave(folder.id);
+          }}
+        >
           <div className="space-y-6">
             {/* Name Input */}
             <div>

@@ -1,38 +1,35 @@
-import { hasCryptoSupport, hasWindow } from "@/utils/cache/environment";
-
 const ENCRYPTION_SALT = "tabby:cache:v1";
 const IV_BYTE_LENGTH = 12;
+const PAYLOAD_VERSION = 1;
 
-type EncryptionContext = {
-  uid: string;
-  secret: string;
-  keyPromise: Promise<CryptoKey>;
+type EncryptedPayload = { v: number; i: string; d: string };
+
+export const hasCryptoSupport = () =>
+  typeof globalThis.crypto !== "undefined" &&
+  typeof globalThis.crypto.subtle !== "undefined" &&
+  typeof globalThis.crypto.getRandomValues === "function" &&
+  typeof TextEncoder !== "undefined" &&
+  typeof TextDecoder !== "undefined" &&
+  typeof globalThis.btoa === "function" &&
+  typeof globalThis.atob === "function";
+
+const assertCryptoSupport = () => {
+  if (!hasCryptoSupport()) {
+    throw new Error("Crypto unavailable");
+  }
 };
 
-let encryptionContext: EncryptionContext | null = null;
-
-const textEncoder =
-  typeof TextEncoder !== "undefined" ? new TextEncoder() : null;
-const textDecoder =
-  typeof TextDecoder !== "undefined" ? new TextDecoder() : null;
-
 const toBase64 = (buffer: ArrayBuffer) => {
-  if (!hasWindow()) {
-    return "";
-  }
   const bytes = new Uint8Array(buffer);
   let binary = "";
   for (let i = 0; i < bytes.byteLength; i += 1) {
     binary += String.fromCharCode(bytes[i]);
   }
-  return window.btoa(binary);
+  return globalThis.btoa(binary);
 };
 
 const fromBase64 = (payload: string) => {
-  if (!hasWindow()) {
-    return new ArrayBuffer(0);
-  }
-  const binary = window.atob(payload);
+  const binary = globalThis.atob(payload);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) {
     bytes[i] = binary.charCodeAt(i);
@@ -40,40 +37,19 @@ const fromBase64 = (payload: string) => {
   return bytes.buffer;
 };
 
-export const getEncryptionContext = () => encryptionContext;
-
-export const setEncryptionContext = (context: EncryptionContext | null) => {
-  encryptionContext = context;
-};
-
-export const isEncryptionConfigured = () => encryptionContext !== null;
-
-const deriveKey = async (uid: string, secret: string) => {
-  if (!textEncoder || !hasCryptoSupport()) {
-    throw new Error("Crypto unavailable");
-  }
-  const material = textEncoder.encode(`${uid}:${secret}:${ENCRYPTION_SALT}`);
-  const digest = await window.crypto.subtle.digest("SHA-256", material);
-  return window.crypto.subtle.importKey("raw", digest, "AES-GCM", false, [
-    "encrypt",
-    "decrypt",
-  ]);
-};
-
+// Base64 SHA-256 of `${uid}:${secret}:${salt}`; this is the raw AES-GCM key.
 export const deriveKeyMaterial = async (uid: string, secret: string) => {
-  if (!textEncoder || !hasCryptoSupport()) {
-    throw new Error("Crypto unavailable");
-  }
-  const material = textEncoder.encode(`${uid}:${secret}:${ENCRYPTION_SALT}`);
-  const digest = await window.crypto.subtle.digest("SHA-256", material);
+  assertCryptoSupport();
+  const material = new TextEncoder().encode(
+    `${uid}:${secret}:${ENCRYPTION_SALT}`,
+  );
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", material);
   return toBase64(digest);
 };
 
-const importKeyMaterial = async (keyMaterial: string) => {
-  if (!hasCryptoSupport()) {
-    throw new Error("Crypto unavailable");
-  }
-  return window.crypto.subtle.importKey(
+export const importKeyMaterial = async (keyMaterial: string) => {
+  assertCryptoSupport();
+  return globalThis.crypto.subtle.importKey(
     "raw",
     fromBase64(keyMaterial),
     "AES-GCM",
@@ -82,71 +58,35 @@ const importKeyMaterial = async (keyMaterial: string) => {
   );
 };
 
-const ensureCryptoKey = async (uid?: string) => {
-  if (!hasCryptoSupport() || !encryptionContext) {
-    return null;
-  }
-  if (uid && encryptionContext.uid !== uid) {
-    return null;
-  }
-  try {
-    return await encryptionContext.keyPromise;
-  } catch {
-    encryptionContext = null;
-    return null;
-  }
-};
-
-export const createEncryptionContext = (uid: string, secret: string) => ({
-  uid,
-  secret,
-  keyPromise: deriveKey(uid, secret),
-});
-
-export const createEncryptionContextFromKeyMaterial = (
-  uid: string,
-  keyMaterial: string,
-) => ({
-  uid,
-  secret: keyMaterial,
-  keyPromise: importKeyMaterial(keyMaterial),
-});
-
-export const encryptPayload = async (uid: string, plaintext: string) => {
-  const key = await ensureCryptoKey(uid);
-  if (!key || !textEncoder || !hasCryptoSupport()) {
-    return null;
-  }
-  const iv = window.crypto.getRandomValues(new Uint8Array(IV_BYTE_LENGTH));
-  const cipher = await window.crypto.subtle.encrypt(
+export const encryptPayload = async (key: CryptoKey, plaintext: string) => {
+  assertCryptoSupport();
+  const iv = globalThis.crypto.getRandomValues(new Uint8Array(IV_BYTE_LENGTH));
+  const cipher = await globalThis.crypto.subtle.encrypt(
     {
       name: "AES-GCM",
       iv,
     },
     key,
-    textEncoder.encode(plaintext),
+    new TextEncoder().encode(plaintext),
   );
-  return JSON.stringify({
-    v: 1,
+  const payload: EncryptedPayload = {
+    v: PAYLOAD_VERSION,
     i: toBase64(iv.buffer),
     d: toBase64(cipher),
-  });
+  };
+  return JSON.stringify(payload);
 };
 
-export const decryptPayload = async (
-  uid: string | undefined,
-  payload: string,
-) => {
-  const key = await ensureCryptoKey(uid);
-  if (!key || !textDecoder || !hasCryptoSupport()) {
+export const decryptPayload = async (key: CryptoKey, payload: string) => {
+  if (!hasCryptoSupport()) {
     return null;
   }
   try {
-    const parsed = JSON.parse(payload) as { v: number; i: string; d: string };
-    if (parsed.v !== 1) {
+    const parsed = JSON.parse(payload) as EncryptedPayload;
+    if (parsed.v !== PAYLOAD_VERSION) {
       return null;
     }
-    const plaintext = await window.crypto.subtle.decrypt(
+    const plaintext = await globalThis.crypto.subtle.decrypt(
       {
         name: "AES-GCM",
         iv: new Uint8Array(fromBase64(parsed.i)),
@@ -154,7 +94,7 @@ export const decryptPayload = async (
       key,
       fromBase64(parsed.d),
     );
-    return textDecoder.decode(plaintext);
+    return new TextDecoder().decode(plaintext);
   } catch {
     return null;
   }

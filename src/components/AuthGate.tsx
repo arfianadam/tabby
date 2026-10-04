@@ -21,7 +21,6 @@ import {
 import type { FormEvent, ReactNode } from "react";
 import { auth } from "@/firebase/client";
 import { useAuthState } from "@/hooks/useAuthState";
-import { useCachedCollections } from "@/hooks/useCachedCollections";
 import Dashboard from "@/features/dashboard";
 import WorkspaceBootstrap from "@/components/WorkspaceBootstrap";
 
@@ -130,10 +129,6 @@ const AuthGate = () => {
 
   const workspaceUser = user ?? cachedUser ?? null;
   const isColdStart = initializing && !workspaceUser;
-  const { cachedCollections, cacheLoaded } = useCachedCollections(
-    workspaceUser?.uid ?? null,
-    cacheReady,
-  );
 
   if (isColdStart) {
     return <WorkspaceBootstrap />;
@@ -145,8 +140,7 @@ const AuthGate = () => {
         key={workspaceUser.uid}
         user={workspaceUser}
         allowSync={Boolean(user)}
-        initialCollections={cachedCollections}
-        initialCollectionsLoaded={cacheLoaded}
+        cacheReady={cacheReady}
       />
     );
   }

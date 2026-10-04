@@ -25,3 +25,17 @@ export const getCurrentWindowTabs = async (): Promise<BrowserTab[]> => {
       url: tab.url,
     }));
 };
+
+const isWebUrl = (url: string) => /^https?:\/\//i.test(url);
+
+// Pages can't follow links to chrome:// and similar; the tabs API can.
+export const needsTabsNavigation = (url: string) =>
+  hasChromeTabsSupport && !isWebUrl(url);
+
+export const openWithTabs = (url: string, newTab: boolean) => {
+  if (newTab) {
+    void chrome.tabs.create({ url, active: false });
+  } else {
+    void chrome.tabs.update({ url });
+  }
+};

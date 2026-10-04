@@ -1,5 +1,10 @@
 const hasWindow = () => typeof window !== "undefined" && !!window.localStorage;
 
+export type FaviconLookup = {
+  url: string;
+  faviconUrl?: string;
+};
+
 const CACHE_VERSION = "v1";
 const CACHE_KEY = `tabby:favicons:${CACHE_VERSION}`;
 const SUCCESS_TTL = 1000 * 60 * 60 * 24 * 7; // 7 days
@@ -61,7 +66,7 @@ const getCacheKey = (url: string) => {
 const isCacheEntryFresh = (entry: FaviconCacheEntry) =>
   Date.now() - entry.updatedAt < SUCCESS_TTL;
 
-export const getCachedFaviconDataUrl = (url: string): string | null => {
+const readCachedDataUrl = (url: string): string | null => {
   if (!url) {
     return null;
   }
@@ -136,32 +141,23 @@ const buildSourcesForUrl = (url: string): string[] => {
   }
 };
 
-const buildFaviconSources = (url: string, customUrl?: string): string[] => {
-  const sources: string[] = [];
+// Custom favicon URL wins over the bookmark URL, for both cache and fetch.
+const lookupOrder = ({ url, faviconUrl }: FaviconLookup): string[] =>
+  faviconUrl ? [faviconUrl, url] : [url];
 
-  // Try custom URL first if provided
-  if (customUrl) {
-    sources.push(...buildSourcesForUrl(customUrl));
-  }
+// Icons are stored under the bookmark URL, falling back to the custom URL.
+const storageUrl = ({ url, faviconUrl }: FaviconLookup) => url || faviconUrl;
 
-  // Fall back to main URL
-  sources.push(...buildSourcesForUrl(url));
-
-  return sources;
-};
+const isHttpUrl = (url: string) => /^https?:\/\//i.test(url);
 
 const downloadFavicon = async (
-  url: string,
-  customUrl?: string,
+  target: FaviconLookup,
 ): Promise<string | null> => {
-  // At least one URL must be valid
-  const hasValidUrl = /^https?:\/\//i.test(url);
-  const hasValidCustomUrl = customUrl && /^https?:\/\//i.test(customUrl);
-  if (!hasValidUrl && !hasValidCustomUrl) {
+  const candidates = lookupOrder(target);
+  if (!candidates.some(isHttpUrl)) {
     return null;
   }
-  const sources = buildFaviconSources(url, customUrl);
-  for (const source of sources) {
+  for (const source of candidates.flatMap(buildSourcesForUrl)) {
     try {
       const response = await fetch(source, {
         mode: "cors",
@@ -181,47 +177,43 @@ const downloadFavicon = async (
   return null;
 };
 
-export const fetchAndCacheFavicon = async (
-  url: string,
-  customUrl?: string,
+export const getCachedFavicon = (target: FaviconLookup): string | null => {
+  for (const url of lookupOrder(target)) {
+    const cached = readCachedDataUrl(url);
+    if (cached) {
+      return cached;
+    }
+  }
+  return null;
+};
+
+export const resolveFavicon = (
+  target: FaviconLookup,
 ): Promise<string | null> => {
-  if (!url && !customUrl) {
-    return null;
+  const cached = getCachedFavicon(target);
+  if (cached) {
+    return Promise.resolve(cached);
   }
-
-  // Check cache for custom URL first, then main URL
-  if (customUrl) {
-    const cachedCustom = getCachedFaviconDataUrl(customUrl);
-    if (cachedCustom) {
-      return cachedCustom;
-    }
+  const url = storageUrl(target);
+  if (!url) {
+    return Promise.resolve(null);
   }
-  if (url) {
-    const cachedMain = getCachedFaviconDataUrl(url);
-    if (cachedMain) {
-      return cachedMain;
-    }
+  const cacheKey = getCacheKey(url);
+  const inflight = inflightFetches.get(cacheKey);
+  if (inflight) {
+    return inflight;
   }
-
-  // Use main URL as cache key (fallback to custom if main is empty)
-  const cacheKey = getCacheKey(url || customUrl!);
-  if (!inflightFetches.has(cacheKey)) {
-    inflightFetches.set(
-      cacheKey,
-      (async () => {
-        const dataUrl = await downloadFavicon(url, customUrl);
-        if (dataUrl) {
-          // Cache under main URL if available, otherwise custom URL
-          persistCacheEntry(url || customUrl!, dataUrl);
-        }
-        return dataUrl;
-      })(),
-    );
-  }
-
-  try {
-    return await inflightFetches.get(cacheKey)!;
-  } finally {
-    inflightFetches.delete(cacheKey);
-  }
+  const request = downloadFavicon(target)
+    .then((dataUrl) => {
+      if (dataUrl) {
+        persistCacheEntry(url, dataUrl);
+      }
+      return dataUrl;
+    })
+    .catch(() => null)
+    .finally(() => {
+      inflightFetches.delete(cacheKey);
+    });
+  inflightFetches.set(cacheKey, request);
+  return request;
 };

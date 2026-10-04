@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Bookmark, Folder } from "@/types";
 import { arraysMatch } from "@/utils/arrays";
+import { moveBetweenLists, moveWithinList } from "../collectionEdits";
+
+const idKey = (id: string) => id;
 
 export const useFolderOrdering = (folders: Folder[]) => {
   const folderIds = useMemo(
@@ -105,45 +108,32 @@ export const useFolderOrdering = (folders: Folder[]) => {
 
       // Helper to get current valid ID list for a folder
       const getList = (fId: string) => {
-        if (next[fId]) return [...next[fId]];
+        if (next[fId]) return next[fId];
         const folder = folders.find((f) => f.id === fId);
         return folder ? folder.bookmarks.map((b) => b.id) : [];
       };
 
       if (sourceFolderId === targetFolderId) {
         const list = getList(sourceFolderId);
-        const sIdx = list.indexOf(bookmarkId);
-        if (sIdx > -1) {
-          list.splice(sIdx, 1);
-          let insertIdx = targetIndex;
-          // Adjust index if moving down, as removal shifts indices
-          insertIdx = Math.max(0, Math.min(insertIdx, list.length));
-          list.splice(insertIdx, 0, bookmarkId);
-          next[sourceFolderId] = list;
+        if (list.includes(bookmarkId)) {
+          next[sourceFolderId] = moveWithinList(
+            list,
+            bookmarkId,
+            targetIndex,
+            idKey,
+          );
         }
       } else {
-        const sourceList = getList(sourceFolderId);
-        const targetList = getList(targetFolderId);
-
-        // Remove from source
-        const sIdx = sourceList.indexOf(bookmarkId);
-        if (sIdx > -1) {
-          sourceList.splice(sIdx, 1);
-        }
-
-        // Add to target
-        if (targetIndex === -1) {
-          targetList.push(bookmarkId);
-        } else {
-          const safeIndex = Math.min(
-            Math.max(0, targetIndex),
-            targetList.length,
-          );
-          targetList.splice(safeIndex, 0, bookmarkId);
-        }
-
-        next[sourceFolderId] = sourceList;
-        next[targetFolderId] = targetList;
+        // -1 appends to the target folder
+        const moved = moveBetweenLists(
+          getList(sourceFolderId),
+          getList(targetFolderId),
+          bookmarkId,
+          targetIndex === -1 ? Number.POSITIVE_INFINITY : targetIndex,
+          idKey,
+        );
+        next[sourceFolderId] = moved.source;
+        next[targetFolderId] = moved.target;
       }
 
       return next;
