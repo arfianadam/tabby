@@ -201,13 +201,13 @@ const AddBookmarkModal = ({
           </button>
         </div>
         <form
-          className="flex min-h-0 grow overflow-y-auto px-5 py-5 sm:px-6"
+          className="flex min-h-0 grow overflow-x-hidden overflow-y-auto px-5 py-5 sm:px-6"
           onSubmit={(event) => {
             event.preventDefault();
             onAddBookmark(folder.id);
           }}
         >
-          <div className="flex min-h-0 grow flex-col gap-6 lg:flex-row">
+          <div className="flex min-h-0 min-w-0 grow flex-col gap-6 lg:flex-row">
             <div className="min-w-0 flex-1 space-y-4">
               <label className="flex flex-col gap-2 text-xs font-bold text-[var(--ink)]">
                 Title
@@ -286,7 +286,7 @@ const AddBookmarkModal = ({
               </div>
             </div>
             {!isEditing && (
-              <div className="flex min-h-72 w-full flex-col space-y-3 border-t border-[var(--line)] pt-5 lg:min-h-0 lg:w-[54%] lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+              <div className="flex min-h-72 w-full min-w-0 flex-col space-y-3 border-t border-[var(--line)] pt-5 lg:min-h-0 lg:w-[54%] lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="flex items-center gap-2 text-sm font-bold text-[var(--ink)]">
                     <FontAwesomeIcon icon={faListUl} />
@@ -400,7 +400,7 @@ const AddBookmarkModal = ({
                                 <span className="truncate text-sm font-semibold text-[var(--ink)]">
                                   {tab.title}
                                 </span>
-                                <span className="truncate break-all text-xs text-[var(--muted)]">
+                                <span className="truncate text-xs text-[var(--muted)]">
                                   {tab.url}
                                 </span>
                               </span>
