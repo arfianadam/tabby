@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { getCachedFavicon, resolveFavicon } from "@/utils/favicons";
+import {
+  getCachedFavicon,
+  resolveFavicon,
+  withSiblingFaviconUrls,
+} from "@/utils/favicons";
 
 export type FaviconTarget = {
   id: string;
@@ -14,7 +18,8 @@ type ResolvedMap = Record<string, { key: string; icon: string | null }>;
 const targetKey = (target: FaviconTarget) =>
   `${target.url}|${target.faviconUrl ?? ""}`;
 
-export const useFavicons = (targets: FaviconTarget[]) => {
+export const useFavicons = (list: FaviconTarget[]) => {
+  const targets = useMemo(() => withSiblingFaviconUrls(list), [list]);
   const [resolved, setResolved] = useState<ResolvedMap>({});
 
   // Drop entries for targets that no longer exist or whose URLs changed.

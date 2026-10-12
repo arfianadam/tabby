@@ -8,6 +8,8 @@ export type FaviconLookup = {
 const CACHE_VERSION = "v1";
 const CACHE_KEY = `tabby:favicons:${CACHE_VERSION}`;
 const SUCCESS_TTL = 1000 * 60 * 60 * 24 * 7; // 7 days
+// Leaves room in localStorage for the app's other data, like the auth session.
+const MAX_ENTRIES = 500;
 
 type FaviconCacheEntry = {
   dataUrl: string;
@@ -20,6 +22,9 @@ const memoryCache: Map<string, string> = new Map();
 const inflightFetches: Map<string, Promise<string | null>> = new Map();
 
 let persistedCache: FaviconCache | null = null;
+
+const isCacheEntryFresh = (entry: FaviconCacheEntry) =>
+  Date.now() - entry.updatedAt < SUCCESS_TTL;
 
 const readStoredCache = (): FaviconCache | null => {
   if (!hasWindow()) {
@@ -43,15 +48,30 @@ const readCache = (): FaviconCache => {
   return persistedCache;
 };
 
+// Saves the newest unexpired icons, dropping the oldest half while they do not
+// fit in localStorage.
 const writeCache = (cache: FaviconCache) => {
-  persistedCache = cache;
+  let entries = Object.entries(cache)
+    .filter(([, entry]) => isCacheEntryFresh(entry))
+    .sort(([, a], [, b]) => b.updatedAt - a.updatedAt)
+    .slice(0, MAX_ENTRIES);
+  persistedCache = Object.fromEntries(entries);
   if (!hasWindow()) {
     return;
   }
-  try {
-    window.localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-  } catch {
-    // ignore quota errors
+  for (;;) {
+    try {
+      window.localStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify(Object.fromEntries(entries)),
+      );
+      return;
+    } catch {
+      if (!entries.length) {
+        return;
+      }
+      entries = entries.slice(0, Math.floor(entries.length / 2));
+    }
   }
 };
 
@@ -72,14 +92,10 @@ const getCacheKey = (url: string) => {
   }
 };
 
-const isCacheEntryFresh = (entry: FaviconCacheEntry) =>
-  Date.now() - entry.updatedAt < SUCCESS_TTL;
-
-const readCachedDataUrl = (url: string): string | null => {
-  if (!url) {
+const readCachedDataUrl = (cacheKey: string): string | null => {
+  if (!cacheKey) {
     return null;
   }
-  const cacheKey = getCacheKey(url);
   if (memoryCache.has(cacheKey)) {
     return memoryCache.get(cacheKey) ?? null;
   }
@@ -102,26 +118,14 @@ const readCachedDataUrl = (url: string): string | null => {
   return entry.dataUrl;
 };
 
-// A plain lookup never replaces an icon a custom lookup stored for the host.
-const persistCacheEntry = (
-  url: string,
-  dataUrl: string,
-  overwrite: boolean,
-) => {
-  if (!url || !dataUrl) {
-    return;
-  }
-  const cacheKey = getCacheKey(url);
+const persistCacheEntry = (cacheKey: string, dataUrl: string) => {
   updateCache((cache) => {
-    if (!overwrite && cache[cacheKey]) {
-      return;
-    }
     cache[cacheKey] = {
       dataUrl,
       updatedAt: Date.now(),
     };
-    memoryCache.set(cacheKey, dataUrl);
   });
+  memoryCache.set(cacheKey, dataUrl);
 };
 
 const blobToDataUrl = (blob: Blob) =>
@@ -162,16 +166,16 @@ const buildSourcesForUrl = (url: string): string[] => {
   }
 };
 
-// Custom favicon URL wins over the bookmark URL, for both cache and fetch.
+// Custom favicon URL is fetched before the bookmark URL.
 const lookupOrder = ({ url, faviconUrl }: FaviconLookup): string[] =>
   faviconUrl ? [faviconUrl, url] : [url];
 
 // Icons are stored under the bookmark URL, falling back to the custom URL.
 const storageUrl = ({ url, faviconUrl }: FaviconLookup) => url || faviconUrl;
 
-// Concurrent lookups share a request only when they try the same hosts. A
-// plain lookup must not answer for a custom one stored under the same host.
-const requestKey = (target: FaviconLookup) =>
+// Lookups share a request and a cached icon only when they try the same hosts,
+// so a host's own icon and each custom icon on it are kept apart.
+const lookupKey = (target: FaviconLookup) =>
   lookupOrder(target).map(getCacheKey).join("|");
 
 const isHttpUrl = (url: string) => /^https?:\/\//i.test(url);
@@ -203,15 +207,8 @@ const downloadFavicon = async (
   return null;
 };
 
-export const getCachedFavicon = (target: FaviconLookup): string | null => {
-  for (const url of lookupOrder(target)) {
-    const cached = readCachedDataUrl(url);
-    if (cached) {
-      return cached;
-    }
-  }
-  return null;
-};
+export const getCachedFavicon = (target: FaviconLookup): string | null =>
+  readCachedDataUrl(lookupKey(target));
 
 export const resolveFavicon = (
   target: FaviconLookup,
@@ -224,7 +221,7 @@ export const resolveFavicon = (
   if (!url) {
     return Promise.resolve(null);
   }
-  const key = requestKey(target);
+  const key = lookupKey(target);
   const inflight = inflightFetches.get(key);
   if (inflight) {
     return inflight;
@@ -232,7 +229,7 @@ export const resolveFavicon = (
   const request = downloadFavicon(target)
     .then((dataUrl) => {
       if (dataUrl) {
-        persistCacheEntry(url, dataUrl, !!target.faviconUrl);
+        persistCacheEntry(key, dataUrl);
       }
       return dataUrl;
     })
@@ -242,4 +239,23 @@ export const resolveFavicon = (
     });
   inflightFetches.set(key, request);
   return request;
+};
+
+// Targets without a custom URL borrow the one of the first target on their
+// host that has one, so list order, not fetch timing, picks their icon.
+export const withSiblingFaviconUrls = <T extends FaviconLookup>(
+  targets: T[],
+): T[] => {
+  const customUrls = new Map<string, string>();
+  targets.forEach(({ url, faviconUrl }) => {
+    const host = getCacheKey(url);
+    if (faviconUrl && !customUrls.has(host)) {
+      customUrls.set(host, faviconUrl);
+    }
+  });
+  return targets.map((target) => {
+    const faviconUrl =
+      !target.faviconUrl && customUrls.get(getCacheKey(target.url));
+    return faviconUrl ? { ...target, faviconUrl } : target;
+  });
 };
