@@ -15,10 +15,25 @@ class StubFileReader {
   }
 }
 
-Object.assign(globalThis, { FileReader: StubFileReader });
+const storage = new Map<string, string>();
+
+Object.assign(globalThis, {
+  FileReader: StubFileReader,
+  window: {
+    localStorage: {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+    },
+  },
+});
+
+// Each import is a separate module instance sharing storage, like a new tab.
+let tabCount = 0;
+const openTab = (): Promise<typeof import("../src/utils/favicons.ts")> =>
+  import(`../src/utils/favicons.ts?tab=${++tabCount}`);
 
 const requests: string[] = [];
-let respond: (source: string) => Response = () =>
+let respond: (source: string) => Response | Promise<Response> = () =>
   new Response(null, { status: 404 });
 
 globalThis.fetch = (async (input: string | URL | Request) => {
@@ -131,6 +146,77 @@ test("concurrent resolves for the same host share one request", async () => {
     iconFor("main-e.test"),
   ]);
   assert.equal(requestCount(), 1);
+});
+
+test("a plain lookup does not answer for a custom lookup on the same host", async () => {
+  serveHosts("custom-g.test");
+
+  // The plain sibling starts first, as when it comes earlier in a collection.
+  const [, custom] = await Promise.all([
+    resolveFavicon({ url: "https://main-g.test/one" }),
+    resolveFavicon({
+      url: "https://main-g.test/two",
+      faviconUrl: "https://custom-g.test/icon.png",
+    }),
+  ]);
+
+  assert.equal(custom, iconFor("custom-g.test"));
+  assert.equal(
+    getCachedFavicon({ url: "https://main-g.test/three" }),
+    iconFor("custom-g.test"),
+  );
+});
+
+test("a plain lookup does not overwrite the icon a custom lookup saved", async () => {
+  serveHosts("custom-i.test", "main-i.test");
+  const serve = respond;
+  // The bookmark host answers late, so the plain lookup finishes last.
+  respond = async (source) => {
+    if (decodeURIComponent(source).includes("https://main-i.test")) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    return serve(source);
+  };
+
+  await Promise.all([
+    resolveFavicon({ url: "https://main-i.test/one" }),
+    resolveFavicon({
+      url: "https://main-i.test/two",
+      faviconUrl: "https://custom-i.test/icon.png",
+    }),
+  ]);
+
+  const newTab = await openTab();
+  assert.equal(
+    newTab.getCachedFavicon({
+      url: "https://main-i.test/two",
+      faviconUrl: "https://custom-i.test/icon.png",
+    }),
+    iconFor("custom-i.test"),
+  );
+});
+
+test("saving an icon keeps the icons other tabs saved", async () => {
+  serveHosts("custom-h.test", "other-h.test");
+  const staleTab = await openTab();
+  staleTab.getCachedFavicon({ url: "https://main-h.test" });
+
+  const activeTab = await openTab();
+  await activeTab.resolveFavicon({
+    url: "https://main-h.test/page",
+    faviconUrl: "https://custom-h.test/icon.png",
+  });
+  await staleTab.resolveFavicon({ url: "https://other-h.test" });
+
+  const newTab = await openTab();
+  assert.equal(
+    newTab.getCachedFavicon({ url: "https://main-h.test/another" }),
+    iconFor("custom-h.test"),
+  );
+  assert.equal(
+    newTab.getCachedFavicon({ url: "https://other-h.test" }),
+    iconFor("other-h.test"),
+  );
 });
 
 test("failed lookups resolve to null, are not cached, and can be retried", async () => {

@@ -21,25 +21,26 @@ const inflightFetches: Map<string, Promise<string | null>> = new Map();
 
 let persistedCache: FaviconCache | null = null;
 
-const readCache = (): FaviconCache => {
-  if (persistedCache) {
-    return persistedCache;
-  }
+const readStoredCache = (): FaviconCache | null => {
   if (!hasWindow()) {
-    return {};
+    return null;
   }
   const raw = window.localStorage.getItem(CACHE_KEY);
   if (!raw) {
-    persistedCache = {};
-    return persistedCache;
+    return {};
   }
   try {
-    persistedCache = JSON.parse(raw) as FaviconCache;
-    return persistedCache;
+    return JSON.parse(raw) as FaviconCache;
   } catch {
-    persistedCache = {};
-    return persistedCache;
+    return {};
   }
+};
+
+const readCache = (): FaviconCache => {
+  if (!persistedCache) {
+    persistedCache = readStoredCache() ?? {};
+  }
+  return persistedCache;
 };
 
 const writeCache = (cache: FaviconCache) => {
@@ -52,6 +53,14 @@ const writeCache = (cache: FaviconCache) => {
   } catch {
     // ignore quota errors
   }
+};
+
+// Every open tab shares the stored cache, so apply changes to its latest
+// contents rather than this tab's snapshot, which would drop other tabs' icons.
+const updateCache = (change: (cache: FaviconCache) => void) => {
+  const cache = readStoredCache() ?? readCache();
+  change(cache);
+  writeCache(cache);
 };
 
 const getCacheKey = (url: string) => {
@@ -80,8 +89,12 @@ const readCachedDataUrl = (url: string): string | null => {
     return null;
   }
   if (!isCacheEntryFresh(entry)) {
-    delete cache[cacheKey];
-    writeCache(cache);
+    updateCache((latest) => {
+      const current = latest[cacheKey];
+      if (current && !isCacheEntryFresh(current)) {
+        delete latest[cacheKey];
+      }
+    });
     memoryCache.delete(cacheKey);
     return null;
   }
@@ -89,18 +102,26 @@ const readCachedDataUrl = (url: string): string | null => {
   return entry.dataUrl;
 };
 
-const persistCacheEntry = (url: string, dataUrl: string) => {
+// A plain lookup never replaces an icon a custom lookup stored for the host.
+const persistCacheEntry = (
+  url: string,
+  dataUrl: string,
+  overwrite: boolean,
+) => {
   if (!url || !dataUrl) {
     return;
   }
   const cacheKey = getCacheKey(url);
-  const cache = readCache();
-  cache[cacheKey] = {
-    dataUrl,
-    updatedAt: Date.now(),
-  };
-  memoryCache.set(cacheKey, dataUrl);
-  writeCache(cache);
+  updateCache((cache) => {
+    if (!overwrite && cache[cacheKey]) {
+      return;
+    }
+    cache[cacheKey] = {
+      dataUrl,
+      updatedAt: Date.now(),
+    };
+    memoryCache.set(cacheKey, dataUrl);
+  });
 };
 
 const blobToDataUrl = (blob: Blob) =>
@@ -147,6 +168,11 @@ const lookupOrder = ({ url, faviconUrl }: FaviconLookup): string[] =>
 
 // Icons are stored under the bookmark URL, falling back to the custom URL.
 const storageUrl = ({ url, faviconUrl }: FaviconLookup) => url || faviconUrl;
+
+// Concurrent lookups share a request only when they try the same hosts. A
+// plain lookup must not answer for a custom one stored under the same host.
+const requestKey = (target: FaviconLookup) =>
+  lookupOrder(target).map(getCacheKey).join("|");
 
 const isHttpUrl = (url: string) => /^https?:\/\//i.test(url);
 
@@ -198,22 +224,22 @@ export const resolveFavicon = (
   if (!url) {
     return Promise.resolve(null);
   }
-  const cacheKey = getCacheKey(url);
-  const inflight = inflightFetches.get(cacheKey);
+  const key = requestKey(target);
+  const inflight = inflightFetches.get(key);
   if (inflight) {
     return inflight;
   }
   const request = downloadFavicon(target)
     .then((dataUrl) => {
       if (dataUrl) {
-        persistCacheEntry(url, dataUrl);
+        persistCacheEntry(url, dataUrl, !!target.faviconUrl);
       }
       return dataUrl;
     })
     .catch(() => null)
     .finally(() => {
-      inflightFetches.delete(cacheKey);
+      inflightFetches.delete(key);
     });
-  inflightFetches.set(cacheKey, request);
+  inflightFetches.set(key, request);
   return request;
 };
