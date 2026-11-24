@@ -3,6 +3,9 @@ import {
   applyCollectionEdit,
   createCollection,
   deleteCollection,
+  moveBookmarkAcrossCollections,
+  renameCollection,
+  reorderCollections,
 } from "../services/collections";
 import {
   createWorkspaceEditor,
@@ -16,6 +19,7 @@ import {
 type UseWorkspaceEditingOptions = WorkspaceEditingState & {
   uid: string;
   notify: Notify;
+  confirm: (message: string) => Promise<boolean>;
 };
 
 export type WorkspaceEditing = WorkspaceEditor &
@@ -26,6 +30,7 @@ export type WorkspaceEditing = WorkspaceEditor &
 export const useWorkspaceEditing = ({
   uid,
   notify,
+  confirm,
   allowSync,
   editMode,
   collection,
@@ -47,17 +52,38 @@ export const useWorkspaceEditing = ({
       createWorkspaceEditor({
         persistence: {
           createCollection: (name) => createCollection(uid, name),
+          renameCollection: (collectionId, name) =>
+            renameCollection(uid, collectionId, name),
+          reorderCollections: (orderedIds) =>
+            reorderCollections(uid, orderedIds),
           deleteCollection: (collectionId) =>
             deleteCollection(uid, collectionId),
           applyEdit: (collectionId, edit) =>
             applyCollectionEdit(uid, collectionId, edit),
+          moveBookmarkAcrossCollections: (
+            sourceCollectionId,
+            sourceFolderId,
+            targetCollectionId,
+            targetFolderId,
+            bookmarkId,
+            updatedData,
+          ) =>
+            moveBookmarkAcrossCollections(
+              uid,
+              sourceCollectionId,
+              sourceFolderId,
+              targetCollectionId,
+              targetFolderId,
+              bookmarkId,
+              updatedData,
+            ),
         },
         notify,
-        confirm: (message) => window.confirm(message),
+        confirm,
         getState: () => stateRef.current,
         onBusyChange: setBusy,
       }),
-    [uid, notify],
+    [uid, notify, confirm],
   );
 
   const canEdit = allowSync && editMode;

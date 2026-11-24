@@ -13,6 +13,7 @@ The popup handles authentication, invitation-only sign up, and a real-time UI fo
 - Manual folder + bookmark management with inline forms and destructive action confirmations.
 - Responsive popup layout tailored for the Chrome extension window.
 - Overrides the Chrome new tab page so the Tabby dashboard always appears in every new tab.
+- Instant bookmark search from the Chrome address bar (`t <space> query`) via the Omnibox API, plus an in-page quick search field (`/` or `Alt+K`).
 - Caches the last signed-in workspace locally so reopening a tab instantly renders your collections while Firebase reconnects.
 
 ## Firebase setup
@@ -68,11 +69,11 @@ This produces `dist/`, which Chrome can load:
 
 ## Project layout
 
-- `public/manifest.json` – Manifest V3 definition referencing the compiled popup and icons (`public/icons`).
+- `public/manifest.json` – Manifest V3 definition referencing the compiled popup (`index.html?view=popup`), overridden new tab (`index.html`), and icons (`public/icons`).
 - `src/firebase/*` – Firebase initialisation (Auth + Firestore clients).
-- `src/services/collections.ts` – Firestore read/write helpers that keep collections/folders/bookmarks synced.
-- `src/components/*` – React UI for the auth gate and dashboard.
-- `tailwind.config.js`, `postcss.config.js`, and `src/index.css` – Tailwind CSS configuration + base layer used across both the popup and overridden new tab page.
+- `src/features/dashboard/services/collections.ts` – Firestore read/write helpers that keep collections/folders/bookmarks synced.
+- `src/features/dashboard/*` & `src/components/*` – React UI for the auth gate, quick search, icon picker, and dashboard.
+- `postcss.config.js` and `src/index.css` – Tailwind CSS v4 setup + semantic design tokens used across both the popup and overridden new tab page.
 - `.env.example` – Required environment variables, including the invitation code gate.
 
 ## Notes

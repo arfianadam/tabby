@@ -15,10 +15,20 @@ export type Notify = (
 
 export type WorkspacePersistence = {
   createCollection: (name: string) => Promise<string>;
+  renameCollection?: (collectionId: string, name: string) => Promise<void>;
+  reorderCollections?: (orderedCollectionIds: string[]) => Promise<void>;
   deleteCollection: (collectionId: string) => Promise<void>;
   applyEdit: (
     collectionId: string,
     edit: edits.CollectionEdit,
+  ) => Promise<void>;
+  moveBookmarkAcrossCollections?: (
+    sourceCollectionId: string,
+    sourceFolderId: string,
+    targetCollectionId: string,
+    targetFolderId: string,
+    bookmarkId: string,
+    updatedData?: Partial<BookmarkDraft>,
   ) => Promise<void>;
 };
 
@@ -38,7 +48,7 @@ export type WorkspaceBusy = {
 export type WorkspaceEditingDeps = {
   persistence: WorkspacePersistence;
   notify: Notify;
-  confirm: (message: string) => boolean;
+  confirm: (message: string) => boolean | Promise<boolean>;
   getState: () => WorkspaceEditingState;
   onBusyChange?: (busy: WorkspaceBusy) => void;
 };
@@ -55,6 +65,8 @@ export const NO_COLLECTION_MESSAGE = "Create or select a collection first.";
 const MISSING_FOLDER_MESSAGE = "The selected folder is no longer available.";
 const MISSING_URL_MESSAGE = "Provide a URL before saving a bookmark.";
 const MISSING_FOLDER_NAME_MESSAGE = "Provide a folder name before saving.";
+const MISSING_COLLECTION_NAME_MESSAGE =
+  "Provide a collection name before saving.";
 
 // A planned edit: either rejected up front (null stays silent) or ready to run.
 type Plan<T> =
@@ -107,7 +119,7 @@ export const createWorkspaceEditor = (deps: WorkspaceEditingDeps) => {
       }
       return null;
     }
-    if (plan.confirm && !deps.confirm(plan.confirm)) {
+    if (plan.confirm && !(await deps.confirm(plan.confirm))) {
       return null;
     }
     if (plan.busy) {
@@ -178,6 +190,39 @@ export const createWorkspaceEditor = (deps: WorkspaceEditingDeps) => {
       return outcome?.value ?? null;
     },
 
+    renameCollection: (collection: Collection, name: string) =>
+      succeeded(
+        editWorkspace(() => {
+          const trimmed = name.trim();
+          if (!trimmed) {
+            return reject(MISSING_COLLECTION_NAME_MESSAGE);
+          }
+          if (!persistence.renameCollection) {
+            return reject("Renaming collections is unavailable.");
+          }
+          const rename = persistence.renameCollection;
+          return {
+            perform: () => rename(collection.id, trimmed),
+            failure: "Unable to rename collection.",
+            success: { text: "Collection renamed.", tone: "success" },
+          };
+        }),
+      ),
+
+    reorderCollections: (orderedCollectionIds: string[]) =>
+      succeeded(
+        editWorkspace(() => {
+          if (!orderedCollectionIds.length || !persistence.reorderCollections) {
+            return reject();
+          }
+          const reorder = persistence.reorderCollections;
+          return {
+            perform: () => reorder(orderedCollectionIds),
+            failure: "Unable to reorder collections.",
+          };
+        }),
+      ),
+
     deleteCollection: (collection: Collection) =>
       succeeded(
         editWorkspace(() => ({
@@ -235,7 +280,12 @@ export const createWorkspaceEditor = (deps: WorkspaceEditingDeps) => {
         }),
       ),
 
-    updateFolderSettings: (folderId: string, name: string, icon: string) =>
+    updateFolderSettings: (
+      folderId: string,
+      name: string,
+      icon: string,
+      color?: string,
+    ) =>
       succeeded(
         editCollection((collection) => {
           if (!findFolder(collection, folderId)) {
@@ -247,7 +297,13 @@ export const createWorkspaceEditor = (deps: WorkspaceEditingDeps) => {
           }
           return {
             perform: applyTo(collection.id, (current) =>
-              edits.updateFolderSettings(current, folderId, trimmed, icon),
+              edits.updateFolderSettings(
+                current,
+                folderId,
+                trimmed,
+                icon,
+                color,
+              ),
             ),
             failure: "Unable to update folder settings.",
             success: { text: "Folder settings updated.", tone: "success" },
@@ -306,15 +362,68 @@ export const createWorkspaceEditor = (deps: WorkspaceEditingDeps) => {
       folderId: string,
       bookmarkId: string,
       data: Partial<BookmarkDraft>,
+      destination?: { collectionId: string; folderId: string },
     ) =>
       succeeded(
         editCollection((collection) => {
           if (!findFolder(collection, folderId)) {
             return reject(MISSING_FOLDER_MESSAGE);
           }
-          if (data.url && !data.url.trim()) {
+          if (data.url !== undefined && !data.url.trim()) {
             return reject(MISSING_URL_MESSAGE);
           }
+          const targetCollectionId = destination?.collectionId ?? collection.id;
+          const targetFolderId = destination?.folderId ?? folderId;
+
+          if (targetCollectionId !== collection.id) {
+            if (!persistence.moveBookmarkAcrossCollections) {
+              return reject(
+                "Moving bookmarks between collections is unavailable.",
+              );
+            }
+            const moveAcross = persistence.moveBookmarkAcrossCollections;
+            return {
+              perform: () =>
+                moveAcross(
+                  collection.id,
+                  folderId,
+                  targetCollectionId,
+                  targetFolderId,
+                  bookmarkId,
+                  data,
+                ),
+              failure: "Unable to move bookmark.",
+              success: { text: "Bookmark updated and moved.", tone: "success" },
+              busy: "savingBookmark",
+            };
+          }
+
+          if (targetFolderId !== folderId) {
+            if (!findFolder(collection, targetFolderId)) {
+              return reject(MISSING_FOLDER_MESSAGE);
+            }
+            return {
+              perform: applyTo(collection.id, (current) => {
+                const updated = edits.updateBookmark(
+                  current,
+                  folderId,
+                  bookmarkId,
+                  data,
+                );
+                return edits.moveBookmark(
+                  updated,
+                  folderId,
+                  targetFolderId,
+                  bookmarkId,
+                  0,
+                );
+              }),
+              failure: "Unable to move bookmark.",
+              success: { text: "Bookmark updated and moved.", tone: "success" },
+              busy: "savingBookmark",
+            };
+          }
+
           return {
             perform: applyTo(collection.id, (current) =>
               edits.updateBookmark(current, folderId, bookmarkId, data),

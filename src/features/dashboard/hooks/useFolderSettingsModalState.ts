@@ -4,7 +4,7 @@ import {
   type FolderSettingsFormState,
 } from "../components/types";
 import type { Folder } from "@/types";
-import { DEFAULT_FOLDER_ICON } from "@/components/IconPicker";
+import { DEFAULT_FOLDER_ICON } from "@/components/IconPicker/utils/iconLoader";
 import type { WorkspaceEditing } from "./useWorkspaceEditing";
 
 export const useFolderSettingsModalState = (
@@ -41,6 +41,7 @@ export const useFolderSettingsModalState = (
       setForm({
         name: folder.name,
         icon: folder.icon || DEFAULT_FOLDER_ICON,
+        color: folder.color ?? "",
       });
     },
     [ensureCanEdit],
@@ -59,7 +60,14 @@ export const useFolderSettingsModalState = (
   const save = useCallback(
     (targetFolderId: string) => {
       void (async () => {
-        if (await updateFolderSettings(targetFolderId, form.name, form.icon)) {
+        if (
+          await updateFolderSettings(
+            targetFolderId,
+            form.name,
+            form.icon,
+            form.color,
+          )
+        ) {
           close();
         }
       })();

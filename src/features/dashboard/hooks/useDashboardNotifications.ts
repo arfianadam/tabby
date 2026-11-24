@@ -6,6 +6,9 @@ import {
   type SyncToastKind,
 } from "../syncNotification";
 
+const DEFAULT_TOAST_DURATION_MS = 4000;
+const ACTION_TOAST_DURATION_MS = 7500;
+
 const getInitialOnlineStatus = () =>
   typeof navigator === "undefined" ? true : navigator.onLine;
 
@@ -17,6 +20,7 @@ export const useDashboardNotifications = (
 ) => {
   const [banner, setBanner] = useState<Banner | null>(null);
   const [renderedBanner, setRenderedBanner] = useState<Banner | null>(null);
+  const [bannerPaused, setBannerPaused] = useState(false);
   const [syncToastVisible, setSyncToastVisible] = useState(false);
   const [syncToastShouldRender, setSyncToastShouldRender] = useState(false);
   const [syncToastKind, setSyncToastKind] =
@@ -72,18 +76,22 @@ export const useDashboardNotifications = (
   }, [allowSync, hasSyncError, isLoading, isOnline, syncSource, syncToasts]);
 
   useEffect(() => {
-    if (!banner) {
+    if (!banner || bannerPaused) {
       return;
     }
+    const duration = banner.action
+      ? ACTION_TOAST_DURATION_MS
+      : DEFAULT_TOAST_DURATION_MS;
     const timeout = window.setTimeout(() => {
       setBanner(null);
-    }, 4000);
+    }, duration);
     return () => window.clearTimeout(timeout);
-  }, [banner]);
+  }, [banner, bannerPaused]);
 
   const notify = useCallback(
     (text: string, tone: BannerTone = "info", action?: Banner["action"]) => {
       const nextBanner: Banner = { text, tone, action };
+      setBannerPaused(false);
       setRenderedBanner(nextBanner);
       setBanner(nextBanner);
     },
@@ -91,11 +99,16 @@ export const useDashboardNotifications = (
   );
 
   const handleBannerDismiss = useCallback(() => {
+    setBannerPaused(false);
     setBanner(null);
   }, []);
 
   const handleBannerExited = useCallback(() => {
     setRenderedBanner(null);
+  }, []);
+
+  const handleBannerPause = useCallback((paused: boolean) => {
+    setBannerPaused(paused);
   }, []);
 
   const handleSyncToastDismiss = useCallback(() => {
@@ -109,12 +122,14 @@ export const useDashboardNotifications = (
   return {
     banner,
     renderedBanner,
+    isOnline,
     notify,
     syncToastVisible,
     syncToastShouldRender,
     syncToastKind,
     handleBannerDismiss,
     handleBannerExited,
+    handleBannerPause,
     handleSyncToastDismiss,
     handleSyncToastExited,
   };

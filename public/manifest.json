@@ -5,12 +5,19 @@
   "description": "Toby-style bookmark collections that sync to Firebase.",
   "action": {
     "default_title": "Tabby Collections",
-    "default_popup": "index.html",
+    "default_popup": "index.html?view=popup",
     "default_icon": {
       "16": "icons/tabby-v2-16.png",
       "48": "icons/tabby-v2-48.png",
       "128": "icons/tabby-v2-128.png"
     }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "omnibox": {
+    "keyword": "t"
   },
   "chrome_url_overrides": {
     "newtab": "index.html"
@@ -20,7 +27,7 @@
     "48": "icons/tabby-v2-48.png",
     "128": "icons/tabby-v2-128.png"
   },
-  "permissions": ["tabs"],
+  "permissions": ["tabs", "storage"],
   "host_permissions": [
     "https://*.googleapis.com/*",
     "https://*.gstatic.com/*",

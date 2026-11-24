@@ -69,6 +69,14 @@ const setup = ({ state = {}, failWith, confirmAnswer = true }: Setup = {}) => {
         fail();
         return "new-id";
       },
+      renameCollection: async (id, name) => {
+        calls.push(`rename:${id}:${name}`);
+        fail();
+      },
+      reorderCollections: async (ids) => {
+        calls.push(`reorder-collections:${ids.join(",")}`);
+        fail();
+      },
       deleteCollection: async (id) => {
         calls.push(`delete:${id}`);
         fail();
@@ -81,6 +89,18 @@ const setup = ({ state = {}, failWith, confirmAnswer = true }: Setup = {}) => {
           throw new Error("Collection not found.");
         }
         store.set(id, edit(target));
+      },
+      moveBookmarkAcrossCollections: async (
+        sourceCol,
+        sourceFolder,
+        targetCol,
+        targetFolder,
+        bookmarkId,
+      ) => {
+        calls.push(
+          `move-across:${sourceCol}/${sourceFolder}->${targetCol}/${targetFolder}:${bookmarkId}`,
+        );
+        fail();
       },
     },
     notify: (text, tone = "info", action) =>
@@ -402,4 +422,84 @@ test("guard state is read at call time", async () => {
   assert.deepEqual(texts(notices), [
     { text: "Folder created.", tone: "success" },
   ]);
+});
+
+test("renaming and reordering collections validate input and persist", async () => {
+  const { editor, notices, calls } = setup();
+  assert.equal(await editor.renameCollection(collection(), "  "), false);
+  assert.deepEqual(texts(notices), [
+    { text: "Provide a collection name before saving.", tone: "danger" },
+  ]);
+
+  notices.length = 0;
+  assert.equal(await editor.renameCollection(collection(), "  Daily "), true);
+  assert.equal(await editor.reorderCollections(["c2", "c1"]), true);
+  assert.deepEqual(calls, ["rename:c1:Daily", "reorder-collections:c2,c1"]);
+  assert.deepEqual(texts(notices), [
+    { text: "Collection renamed.", tone: "success" },
+  ]);
+});
+
+test("updating a bookmark supports moving within or across collections", async () => {
+  const { editor, calls, store } = setup({
+    state: {
+      collection: collection([folder("f1", ["a", "b"]), folder("f2", ["x"])]),
+    },
+  });
+
+  assert.equal(
+    await editor.updateBookmark(
+      "f1",
+      "a",
+      { title: "Moved", url: "a.test" },
+      { collectionId: "c1", folderId: "f2" },
+    ),
+    true,
+  );
+  assert.deepEqual(
+    store.get("c1")?.folders[0].bookmarks.map((b) => b.id),
+    ["b"],
+  );
+  assert.deepEqual(
+    store.get("c1")?.folders[1].bookmarks.map((b) => b.id),
+    ["a", "x"],
+  );
+
+  assert.equal(
+    await editor.updateBookmark(
+      "f2",
+      "a",
+      { title: "Cross", url: "a.test" },
+      { collectionId: "c2", folderId: "f9" },
+    ),
+    true,
+  );
+  assert.equal(calls.at(-1), "move-across:c1/f2->c2/f9:a");
+});
+
+test("destructive edits support async confirmation dialogs", async () => {
+  const current: WorkspaceEditingState = {
+    allowSync: true,
+    editMode: true,
+    collection: collection(),
+  };
+  let deleted = false;
+  const editor = createWorkspaceEditor({
+    persistence: {
+      createCollection: async () => "id",
+      deleteCollection: async () => {
+        deleted = true;
+      },
+      applyEdit: async () => {},
+    },
+    notify: () => {},
+    confirm: async () => {
+      await new Promise((resolve) => setImmediate(resolve));
+      return true;
+    },
+    getState: () => current,
+  });
+
+  assert.equal(await editor.deleteCollection(collection()), true);
+  assert.equal(deleted, true);
 });

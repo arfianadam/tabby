@@ -5,6 +5,11 @@ import { moveBetweenLists, moveWithinList } from "../collectionEdits";
 
 const idKey = (id: string) => id;
 
+export type OrderingSnapshot = {
+  folderOrder: string[];
+  bookmarkOrders: Record<string, string[]>;
+};
+
 export const useFolderOrdering = (folders: Folder[]) => {
   const folderIds = useMemo(
     () => folders.map((folder) => folder.id),
@@ -140,11 +145,31 @@ export const useFolderOrdering = (folders: Folder[]) => {
     });
   };
 
+  const takeSnapshot = useCallback((): OrderingSnapshot => {
+    const clonedBookmarks: Record<string, string[]> = {};
+    folders.forEach((folder) => {
+      clonedBookmarks[folder.id] = [
+        ...(bookmarkOrders[folder.id] ?? folder.bookmarks.map((b) => b.id)),
+      ];
+    });
+    return {
+      folderOrder: [...folderOrder],
+      bookmarkOrders: clonedBookmarks,
+    };
+  }, [folders, folderOrder, bookmarkOrders]);
+
+  const restoreSnapshot = useCallback((snapshot: OrderingSnapshot) => {
+    setFolderOrder(snapshot.folderOrder);
+    setBookmarkOrders(snapshot.bookmarkOrders);
+  }, []);
+
   return {
     foldersToRender: getOrderedFolders(),
     folderOrder,
     setFolderOrder,
     setBookmarksOrder,
     moveBookmark,
+    takeSnapshot,
+    restoreSnapshot,
   };
 };

@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGripVertical } from "@fortawesome/free-solid-svg-icons";
+import { faGripVertical } from "@/utils/uiIcons";
 import type { DraggableAttributes } from "@dnd-kit/core";
 import type { DraggableSyntheticListeners } from "@dnd-kit/core/dist/hooks/useDraggable";
 import { editorControlButtonClasses } from "../constants";
@@ -23,8 +23,9 @@ const DragHandle = ({
     <button
       type="button"
       aria-label={label}
+      title={label}
       ref={setActivatorNodeRef}
-      className={`${editorControlButtonClasses} cursor-grab opacity-65 hover:opacity-100 active:cursor-grabbing ${className}`}
+      className={`${editorControlButtonClasses} touch-none cursor-grab opacity-65 hover:opacity-100 active:cursor-grabbing ${className}`}
       {...attributes}
       {...listeners}
     >

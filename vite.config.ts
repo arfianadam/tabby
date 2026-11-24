@@ -15,7 +15,15 @@ export default defineConfig({
     outDir: "dist",
     emptyOutDir: true,
     rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        background: path.resolve(__dirname, "src/background/serviceWorker.ts"),
+      },
       output: {
+        entryFileNames: (chunkInfo) =>
+          chunkInfo.name === "background"
+            ? "background.js"
+            : "assets/[name]-[hash].js",
         manualChunks: (id) => {
           if (id.includes("node_modules")) {
             if (id.includes("firebase")) {
@@ -27,8 +35,18 @@ export default defineConfig({
             if (id.includes("@dnd-kit")) {
               return "dnd";
             }
-            if (id.includes("@fortawesome")) {
-              return "fontawesome";
+            if (
+              id.includes("@fortawesome/fontawesome-svg-core") ||
+              id.includes("@fortawesome/react-fontawesome")
+            ) {
+              return "fontawesome-core";
+            }
+            // Keep the full solid icon barrel in its own lazy chunk when dynamically imported.
+            if (id.includes("@fortawesome/free-solid-svg-icons/index")) {
+              return "fontawesome-solid-pack";
+            }
+            if (id.includes("@fortawesome/free-solid-svg-icons")) {
+              return "fontawesome-core";
             }
             return "vendor";
           }

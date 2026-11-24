@@ -9,6 +9,7 @@ import {
   workspaceCache,
   type WorkspaceUser,
 } from "@/utils/cache/workspaceCache";
+import { clearOmniboxIndex } from "@/utils/omniboxIndex";
 
 const BOOTSTRAP_TIMEOUT_MS = 2500;
 
@@ -71,6 +72,7 @@ export const useAuthState = () => {
     };
 
     const closeCache = async () => {
+      clearOmniboxIndex();
       await workspaceCache.close({
         clearCollectionsFor: lastCachedUidRef.current,
       });

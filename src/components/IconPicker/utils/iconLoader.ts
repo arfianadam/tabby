@@ -1,11 +1,47 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { faFolderOpen } from "@fortawesome/free-solid-svg-icons";
-import * as solidIcons from "@fortawesome/free-solid-svg-icons";
+import { faFolderOpen } from "@fortawesome/free-solid-svg-icons/faFolderOpen";
 
-const iconCache = new Map<string, IconDefinition>();
+export const DEFAULT_FOLDER_ICON = "faFolderOpen";
+
+type SolidIconsModule = Record<string, unknown>;
+
+let solidIconsModule: SolidIconsModule | null = null;
+let loadPromise: Promise<SolidIconsModule> | null = null;
+const iconCache = new Map<string, IconDefinition>([
+  [DEFAULT_FOLDER_ICON, faFolderOpen],
+]);
+const listeners = new Set<() => void>();
+
+export const isSolidIconsLoaded = () => solidIconsModule !== null;
+
+export const subscribeSolidIconsLoaded = (listener: () => void) => {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+};
+
+export const loadSolidIcons = (): Promise<SolidIconsModule> => {
+  if (solidIconsModule) {
+    return Promise.resolve(solidIconsModule);
+  }
+  if (!loadPromise) {
+    loadPromise = import("@fortawesome/free-solid-svg-icons")
+      .then((mod) => {
+        solidIconsModule = mod as unknown as SolidIconsModule;
+        listeners.forEach((listener) => listener());
+        return solidIconsModule;
+      })
+      .catch((error) => {
+        loadPromise = null;
+        throw error;
+      });
+  }
+  return loadPromise;
+};
 
 export const getIconDefinition = (iconName?: string | null): IconDefinition => {
-  if (!iconName) {
+  if (!iconName || iconName === DEFAULT_FOLDER_ICON) {
     return faFolderOpen;
   }
 
@@ -14,10 +50,12 @@ export const getIconDefinition = (iconName?: string | null): IconDefinition => {
     return cached;
   }
 
-  const icon = (solidIcons as Record<string, unknown>)[iconName];
-  if (icon && typeof icon === "object" && "iconName" in icon) {
-    iconCache.set(iconName, icon as IconDefinition);
-    return icon as IconDefinition;
+  if (solidIconsModule) {
+    const icon = solidIconsModule[iconName];
+    if (icon && typeof icon === "object" && "iconName" in icon) {
+      iconCache.set(iconName, icon as IconDefinition);
+      return icon as IconDefinition;
+    }
   }
 
   return faFolderOpen;
@@ -25,7 +63,9 @@ export const getIconDefinition = (iconName?: string | null): IconDefinition => {
 
 export const isValidIconName = (iconName: string): boolean => {
   if (!iconName) return false;
-  const icon = (solidIcons as Record<string, unknown>)[iconName];
+  if (iconName === DEFAULT_FOLDER_ICON) return true;
+  if (!solidIconsModule) return false;
+  const icon = solidIconsModule[iconName];
   return (
     icon !== undefined &&
     typeof icon === "object" &&
@@ -33,5 +73,3 @@ export const isValidIconName = (iconName: string): boolean => {
     "iconName" in icon
   );
 };
-
-export const DEFAULT_FOLDER_ICON = "faFolderOpen";

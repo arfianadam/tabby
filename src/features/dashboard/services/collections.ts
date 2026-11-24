@@ -7,10 +7,12 @@ import {
   query,
   runTransaction,
   setDoc,
+  updateDoc,
+  writeBatch,
   type FirestoreError,
 } from "firebase/firestore";
 import { db } from "@/firebase/client";
-import type { Collection } from "@/types";
+import type { BookmarkDraft, Collection } from "@/types";
 import * as edits from "../collectionEdits";
 
 const userCollectionsRef = (uid: string) =>
@@ -45,12 +47,13 @@ export const subscribeToCollections = (
         }
       });
 
-      const nextCollections = snapshot.docs.map((doc) => {
-        return (
-          collectionCache.get(doc.id) ??
-          edits.normalizeCollection(doc.id, doc.data())
-        );
-      });
+      const nextCollections = edits.sortCollections(
+        snapshot.docs.map(
+          (docSnapshot) =>
+            collectionCache.get(docSnapshot.id) ??
+            edits.normalizeCollection(docSnapshot.id, docSnapshot.data()),
+        ),
+      );
 
       onChange(nextCollections, { fromCache: snapshot.metadata.fromCache });
     },
@@ -74,6 +77,39 @@ export const createCollection = async (uid: string, name: string) => {
   return ref.id;
 };
 
+export const renameCollection = async (
+  uid: string,
+  collectionId: string,
+  name: string,
+) => {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    throw new Error("Provide a collection name before saving.");
+  }
+  await updateDoc(collectionDocRef(uid, collectionId), {
+    name: trimmed,
+    updatedAt: Date.now(),
+  });
+};
+
+export const reorderCollections = async (
+  uid: string,
+  orderedCollectionIds: string[],
+) => {
+  if (!orderedCollectionIds.length) {
+    return;
+  }
+  const batch = writeBatch(db);
+  const now = Date.now();
+  orderedCollectionIds.forEach((collectionId, index) => {
+    batch.update(collectionDocRef(uid, collectionId), {
+      order: index,
+      updatedAt: now,
+    });
+  });
+  await batch.commit();
+};
+
 export const deleteCollection = async (uid: string, collectionId: string) =>
   deleteDoc(collectionDocRef(uid, collectionId));
 
@@ -94,5 +130,62 @@ export const applyCollectionEdit = async (
       ...next,
       updatedAt: Date.now(),
     });
+  });
+};
+
+export const moveBookmarkAcrossCollections = async (
+  uid: string,
+  sourceCollectionId: string,
+  sourceFolderId: string,
+  targetCollectionId: string,
+  targetFolderId: string,
+  bookmarkId: string,
+  updatedData?: Partial<BookmarkDraft>,
+) => {
+  const sourceRef = collectionDocRef(uid, sourceCollectionId);
+  const targetRef = collectionDocRef(uid, targetCollectionId);
+
+  await runTransaction(db, async (tx) => {
+    const [sourceSnap, targetSnap] = await Promise.all([
+      tx.get(sourceRef),
+      tx.get(targetRef),
+    ]);
+    if (!sourceSnap.exists()) {
+      throw new Error("Source collection not found.");
+    }
+    if (!targetSnap.exists()) {
+      throw new Error("Target collection not found.");
+    }
+
+    const source = edits.normalizeCollection(sourceSnap.id, sourceSnap.data());
+    const target = edits.normalizeCollection(targetSnap.id, targetSnap.data());
+
+    const sourceWithEdits = updatedData
+      ? edits.updateBookmark(source, sourceFolderId, bookmarkId, updatedData)
+      : source;
+
+    const sourceFolder = sourceWithEdits.folders.find(
+      (f) => f.id === sourceFolderId,
+    );
+    const bookmark = sourceFolder?.bookmarks.find((b) => b.id === bookmarkId);
+    if (!bookmark) {
+      throw new Error("Bookmark not found.");
+    }
+
+    const nextSource = edits.removeBookmark(
+      sourceWithEdits,
+      sourceFolderId,
+      bookmarkId,
+    );
+    const nextTarget = edits.restoreBookmark(
+      target,
+      targetFolderId,
+      bookmark,
+      0,
+    );
+    const now = Date.now();
+
+    tx.set(sourceRef, { ...nextSource, updatedAt: now });
+    tx.set(targetRef, { ...nextTarget, updatedAt: now });
   });
 };

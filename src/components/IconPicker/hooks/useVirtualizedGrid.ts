@@ -27,7 +27,7 @@ export const useVirtualizedGrid = ({
   const [scrollTop, setScrollTop] = useState(0);
   const lastScrollTop = useRef(0);
 
-  const totalRows = Math.ceil(itemCount / columnsPerRow);
+  const totalRows = Math.ceil(itemCount / Math.max(1, columnsPerRow));
   const totalHeight = totalRows * itemHeight;
 
   const visibleRange = useMemo(() => {
@@ -62,7 +62,7 @@ export const useVirtualizedGrid = ({
   useEffect(() => {
     setScrollTop(0);
     lastScrollTop.current = 0;
-  }, [itemCount]);
+  }, [itemCount, columnsPerRow]);
 
   return {
     visibleRange,

@@ -1,12 +1,16 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCat, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faCat, faSpinner } from "@/utils/uiIcons";
 
 const WorkspaceBootstrap = () => (
-  <div className="flex h-full items-center justify-center bg-[var(--canvas)] p-6">
+  <div
+    role="status"
+    aria-live="polite"
+    className="flex h-full items-center justify-center bg-[var(--canvas)] p-6"
+  >
     <div className="w-full max-w-sm rounded-[2rem] border border-[var(--line)] bg-[var(--surface)] p-8 text-center shadow-[0_24px_70px_rgba(34,38,33,0.12)]">
-      <div className="relative mx-auto flex size-14 items-center justify-center rounded-2xl bg-[var(--accent)] text-xl text-white">
+      <div className="relative mx-auto flex size-14 items-center justify-center rounded-2xl bg-[var(--accent-fill)] text-xl text-white">
         <FontAwesomeIcon icon={faCat} />
-        <span className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full border-2 border-[var(--surface)] bg-[var(--surface-raised)] text-[0.62rem] text-[var(--accent)]">
+        <span className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full border-2 border-[var(--surface)] bg-[var(--surface-raised)] text-[0.6875rem] text-[var(--accent)]">
           <FontAwesomeIcon icon={faSpinner} spin />
         </span>
       </div>

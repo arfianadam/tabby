@@ -35,10 +35,12 @@ export const getInitialBookmarkFormState = (): BookmarkFormState => ({
 export type FolderSettingsFormState = {
   name: string;
   icon: string;
+  color: string;
 };
 
 export const getInitialFolderSettingsFormState =
   (): FolderSettingsFormState => ({
     name: "",
     icon: "faFolderOpen",
+    color: "",
   });

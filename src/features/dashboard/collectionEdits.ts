@@ -8,6 +8,7 @@ import type {
 export type CollectionSnapshot = {
   id?: string;
   name?: string;
+  order?: number;
   createdAt?: number;
   updatedAt?: number;
   folders?: Folder[];
@@ -105,6 +106,10 @@ export const normalizeFolder = (
   if (folder.icon) {
     normalized.icon = folder.icon;
   }
+  const color = folder.color?.trim();
+  if (color) {
+    normalized.color = color;
+  }
   return normalized;
 };
 
@@ -112,15 +117,35 @@ export const normalizeCollection = (
   id: string,
   snapshot?: CollectionSnapshot,
   env: EditEnv = defaultEnv,
-): Collection => ({
-  id,
-  name: (snapshot?.name ?? "").trim() || "Untitled collection",
-  createdAt: snapshot?.createdAt ?? env.now(),
-  updatedAt: snapshot?.updatedAt ?? env.now(),
-  folders: Array.isArray(snapshot?.folders)
-    ? snapshot.folders.map((folder) => normalizeFolder(folder, env))
-    : [],
-});
+): Collection => {
+  const normalized: Collection = {
+    id,
+    name: (snapshot?.name ?? "").trim() || "Untitled collection",
+    createdAt: snapshot?.createdAt ?? env.now(),
+    updatedAt: snapshot?.updatedAt ?? env.now(),
+    folders: Array.isArray(snapshot?.folders)
+      ? snapshot.folders.map((folder) => normalizeFolder(folder, env))
+      : [],
+  };
+  if (typeof snapshot?.order === "number" && Number.isFinite(snapshot.order)) {
+    normalized.order = snapshot.order;
+  }
+  return normalized;
+};
+
+export const sortCollections = (
+  collections: readonly Collection[],
+): Collection[] =>
+  [...collections].sort((a, b) => {
+    const orderA =
+      typeof a.order === "number" ? a.order : Number.MAX_SAFE_INTEGER;
+    const orderB =
+      typeof b.order === "number" ? b.order : Number.MAX_SAFE_INTEGER;
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+    return a.createdAt - b.createdAt;
+  });
 
 // Any "scheme://" (chrome://, file://, …) is kept; "host:port" is not a scheme.
 const HAS_SCHEME = /^([a-z][a-z0-9+.-]*:\/\/|(about|mailto):)/i;
@@ -243,6 +268,7 @@ export const updateFolderSettings = (
   folderId: string,
   name: string,
   icon: string,
+  color?: string,
 ): Collection =>
   updateFolder(collection, folderId, (folder) => {
     const updatedFolder: Folder = {
@@ -253,6 +279,14 @@ export const updateFolderSettings = (
       updatedFolder.icon = icon;
     } else {
       delete updatedFolder.icon;
+    }
+    if (color !== undefined) {
+      const trimmedColor = color.trim();
+      if (trimmedColor) {
+        updatedFolder.color = trimmedColor;
+      } else {
+        delete updatedFolder.color;
+      }
     }
     return updatedFolder;
   });

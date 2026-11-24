@@ -11,6 +11,8 @@ export type BookmarkModal = {
   folderId: string | null;
   isEditing: boolean;
   form: BookmarkFormState;
+  destination: { collectionId: string; folderId: string } | null;
+  setDestination: (collectionId: string, folderId: string) => void;
   open: (folderId: string) => void;
   openEdit: (folderId: string, bookmark: Bookmark) => void;
   close: () => void;
@@ -31,10 +33,15 @@ export const useBookmarkModalState = (
   const [form, setForm] = useState<BookmarkFormState>(
     getInitialBookmarkFormState,
   );
+  const [destination, setDestinationState] = useState<{
+    collectionId: string;
+    folderId: string;
+  } | null>(null);
 
   const close = useCallback(() => {
     setFolderId(null);
     setEditingBookmarkId(null);
+    setDestinationState(null);
     setForm(getInitialBookmarkFormState());
   }, []);
 
@@ -55,6 +62,7 @@ export const useBookmarkModalState = (
       }
       setFolderId(nextFolderId);
       setEditingBookmarkId(null);
+      setDestinationState(null);
       setForm(getInitialBookmarkFormState());
     },
     [ensureCanEdit],
@@ -67,6 +75,11 @@ export const useBookmarkModalState = (
       }
       setFolderId(nextFolderId);
       setEditingBookmarkId(bookmark.id);
+      setDestinationState(
+        selectedCollectionId
+          ? { collectionId: selectedCollectionId, folderId: nextFolderId }
+          : null,
+      );
       setForm({
         title: bookmark.title,
         url: bookmark.url,
@@ -74,7 +87,14 @@ export const useBookmarkModalState = (
         faviconUrl: bookmark.faviconUrl ?? "",
       });
     },
-    [ensureCanEdit],
+    [ensureCanEdit, selectedCollectionId],
+  );
+
+  const setDestination = useCallback(
+    (collectionId: string, nextFolderId: string) => {
+      setDestinationState({ collectionId, folderId: nextFolderId });
+    },
+    [],
   );
 
   const changeField = useCallback(
@@ -91,14 +111,26 @@ export const useBookmarkModalState = (
     (targetFolderId: string) => {
       void (async () => {
         const saved = editingBookmarkId
-          ? await updateBookmark(targetFolderId, editingBookmarkId, form)
+          ? await updateBookmark(
+              targetFolderId,
+              editingBookmarkId,
+              form,
+              destination ?? undefined,
+            )
           : await saveBookmarks(targetFolderId, [form]);
         if (saved) {
           close();
         }
       })();
     },
-    [editingBookmarkId, form, updateBookmark, saveBookmarks, close],
+    [
+      editingBookmarkId,
+      form,
+      destination,
+      updateBookmark,
+      saveBookmarks,
+      close,
+    ],
   );
 
   const addTabs = useCallback(
@@ -118,6 +150,8 @@ export const useBookmarkModalState = (
       folderId,
       isEditing: Boolean(editingBookmarkId),
       form,
+      destination,
+      setDestination,
       open,
       openEdit,
       close,
@@ -129,6 +163,8 @@ export const useBookmarkModalState = (
       folderId,
       editingBookmarkId,
       form,
+      destination,
+      setDestination,
       open,
       openEdit,
       close,

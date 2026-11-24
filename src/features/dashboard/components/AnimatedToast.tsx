@@ -17,17 +17,24 @@ const AnimatedToast = ({
   const [isAnimatingIn, setIsAnimatingIn] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const frameRef = useRef<number | null>(null);
+  const innerFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (isVisible) {
       setShouldRender(true);
       frameRef.current = window.requestAnimationFrame(() => {
-        setIsAnimatingIn(true);
+        innerFrameRef.current = window.requestAnimationFrame(() => {
+          setIsAnimatingIn(true);
+        });
       });
       return () => {
         if (frameRef.current !== null) {
           window.cancelAnimationFrame(frameRef.current);
           frameRef.current = null;
+        }
+        if (innerFrameRef.current !== null) {
+          window.cancelAnimationFrame(innerFrameRef.current);
+          innerFrameRef.current = null;
         }
       };
     }
@@ -54,7 +61,7 @@ const AnimatedToast = ({
 
   return (
     <div
-      className={`transform transition-all duration-200 ease-out ${
+      className={`pointer-events-auto transform transition-all duration-200 ease-out ${
         isAnimatingIn
           ? "translate-y-0 opacity-100 scale-100"
           : "translate-y-3 opacity-0 scale-95"

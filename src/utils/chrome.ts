@@ -1,10 +1,15 @@
 export const hasChromeTabsSupport =
   typeof chrome !== "undefined" && !!chrome.tabs;
 
+export const isExtensionPopup =
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).get("view") === "popup";
+
 export type BrowserTab = {
   id: string;
   title: string;
   url: string;
+  active?: boolean;
 };
 
 export const getCurrentWindowTabs = async (): Promise<BrowserTab[]> => {
@@ -23,19 +28,47 @@ export const getCurrentWindowTabs = async (): Promise<BrowserTab[]> => {
       id: String(tab.id ?? `${tab.windowId}-${tab.index}-${tab.url}`),
       title: tab.title ?? tab.url ?? "Untitled tab",
       url: tab.url,
+      active: Boolean(tab.active),
     }));
 };
 
 const isWebUrl = (url: string) => /^https?:\/\//i.test(url);
 
-// Pages can't follow links to chrome:// and similar; the tabs API can.
+// Pages can't follow links to chrome:// and similar; popups must also route via tabs API.
 export const needsTabsNavigation = (url: string) =>
-  hasChromeTabsSupport && !isWebUrl(url);
+  hasChromeTabsSupport && (isExtensionPopup || !isWebUrl(url));
 
 export const openWithTabs = (url: string, newTab: boolean) => {
-  if (newTab) {
-    void chrome.tabs.create({ url, active: false });
+  if (!hasChromeTabsSupport) {
+    if (newTab) {
+      window.open(url, "_blank", "noopener,noreferrer");
+    } else {
+      window.location.assign(url);
+    }
+    return;
+  }
+
+  if (newTab || isExtensionPopup) {
+    void chrome.tabs.create({ url, active: !newTab });
   } else {
     void chrome.tabs.update({ url });
   }
+};
+
+export const openUrlsInNewTabs = (urls: string[]) => {
+  const validUrls = urls.map((url) => url.trim()).filter(Boolean);
+  if (!validUrls.length) {
+    return;
+  }
+
+  if (hasChromeTabsSupport) {
+    validUrls.forEach((url) => {
+      void chrome.tabs.create({ url, active: false });
+    });
+    return;
+  }
+
+  validUrls.forEach((url) => {
+    window.open(url, "_blank", "noopener,noreferrer");
+  });
 };

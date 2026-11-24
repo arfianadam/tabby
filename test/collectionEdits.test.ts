@@ -14,6 +14,7 @@ import {
   reorderBookmarks,
   reorderFolders,
   restoreBookmark,
+  sortCollections,
   updateBookmark,
   updateFolderSettings,
   type EditEnv,
@@ -365,4 +366,57 @@ test("urls keep any scheme and default to https without one", () => {
   assert.equal(normalizeUrl("http://plain.test"), "http://plain.test");
   assert.equal(normalizeUrl("example.com"), "https://example.com");
   assert.equal(normalizeUrl("localhost:3000"), "https://localhost:3000");
+});
+
+test("folder settings support explicit color and reset to auto", () => {
+  const start = collection({ ...folder("f"), icon: "faStar" });
+
+  const colored = updateFolderSettings(start, "f", "Work", "faBook", "indigo");
+  assert.equal(findFolder(colored, "f").color, "indigo");
+
+  const auto = updateFolderSettings(colored, "f", "Work", "faBook", "  ");
+  assert.equal("color" in findFolder(auto, "f"), false);
+});
+
+test("sortCollections respects explicit order then falls back to createdAt", () => {
+  const unorderedOlder: Collection = {
+    id: "old",
+    name: "Old",
+    createdAt: 10,
+    updatedAt: 10,
+    folders: [],
+  };
+  const orderedSecond: Collection = {
+    id: "second",
+    name: "Second",
+    order: 1,
+    createdAt: 30,
+    updatedAt: 30,
+    folders: [],
+  };
+  const orderedFirst: Collection = {
+    id: "first",
+    name: "First",
+    order: 0,
+    createdAt: 50,
+    updatedAt: 50,
+    folders: [],
+  };
+  const unorderedNewer: Collection = {
+    id: "new",
+    name: "New",
+    createdAt: 20,
+    updatedAt: 20,
+    folders: [],
+  };
+
+  assert.deepEqual(
+    sortCollections([
+      unorderedNewer,
+      orderedSecond,
+      unorderedOlder,
+      orderedFirst,
+    ]).map((c) => c.id),
+    ["first", "second", "old", "new"],
+  );
 });

@@ -18,6 +18,8 @@ type SortableFolderCardProps = {
   bookmarks: Bookmark[];
   allowSync: boolean;
   editingEnabled: boolean;
+  canToggleEdit: boolean;
+  onEnableEditMode: () => void;
   index: number;
   onOpenBookmarkModal: (folderId: string) => void;
   onDeleteFolder: (folder: Folder) => void;
@@ -33,6 +35,8 @@ const SortableFolderCard = memo(function SortableFolderCard({
   bookmarks,
   allowSync,
   editingEnabled,
+  canToggleEdit,
+  onEnableEditMode,
   index,
   onOpenBookmarkModal,
   onDeleteFolder,
@@ -102,13 +106,13 @@ const SortableFolderCard = memo(function SortableFolderCard({
     };
   }, [updateGridRowSpan]);
 
-  // Use dnd-kit's transition directly - it manages timing for drag and sort animations
   const style: CSSProperties = {
     gridRowEnd: `span ${gridRowSpan}`,
     ...(editingEnabled
       ? {
           transform: CSS.Translate.toString(transform),
           transition,
+          opacity: isDragging ? 0.35 : 1,
           zIndex: isDragging ? 10 : undefined,
         }
       : {}),
@@ -124,14 +128,16 @@ const SortableFolderCard = memo(function SortableFolderCard({
     <div
       ref={setCardNodeRef}
       style={style}
-      className={`relative min-w-0 break-inside-avoid rounded-[1.35rem] ${
-        isBookmarkOver ? "bg-orange-500/5 ring-2 ring-[var(--accent)]" : ""
+      className={`relative min-w-0 break-inside-avoid rounded-[1.35rem] transition-shadow ${
+        isBookmarkOver ? "bg-[var(--accent)]/6 ring-2 ring-[var(--accent)]" : ""
       }`}
     >
       <FolderCard
         folder={folder}
         bookmarks={bookmarks}
         allowSync={allowSync}
+        canToggleEdit={canToggleEdit}
+        onEnableEditMode={onEnableEditMode}
         onOpenBookmarkModal={onOpenBookmarkModal}
         onDeleteFolder={onDeleteFolder}
         onRenameFolder={onRenameFolder}

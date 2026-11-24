@@ -1,30 +1,63 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+type ThemePreference = "light" | "dark" | null;
+
+const readStoredTheme = (): ThemePreference => {
+  if (typeof window === "undefined") return null;
+  try {
+    const stored = localStorage.getItem("theme");
+    return stored === "dark" || stored === "light" ? stored : null;
+  } catch {
+    return null;
+  }
+};
+
+const getSystemPrefersDark = () => {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+};
 
 export function useDarkMode() {
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const storedTheme = localStorage.getItem("theme");
+  const [preference, setPreference] =
+    useState<ThemePreference>(readStoredTheme);
+  const [systemDark, setSystemDark] = useState<boolean>(getSystemPrefersDark);
 
-    return (
-      storedTheme === "dark" ||
-      (storedTheme === null &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches)
-    );
-  });
+  const isDark = preference === null ? systemDark : preference === "dark";
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = (event: MediaQueryListEvent) => {
+      setSystemDark(event.matches);
+    };
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
 
   useEffect(() => {
     const root = window.document.documentElement;
-    if (isDark) {
-      root.classList.add("dark");
-      localStorage.theme = "dark";
-    } else {
-      root.classList.remove("dark");
-      localStorage.theme = "light";
-    }
+    root.classList.toggle("dark", isDark);
     root.style.colorScheme = isDark ? "dark" : "light";
+
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+    if (themeColor) {
+      themeColor.setAttribute("content", isDark ? "#101310" : "#efede5");
+    }
   }, [isDark]);
 
-  const toggleDarkMode = () => setIsDark((prev) => !prev);
+  const toggleDarkMode = useCallback(() => {
+    setPreference((prev) => {
+      const currentIsDark =
+        prev === null ? getSystemPrefersDark() : prev === "dark";
+      const next: "light" | "dark" = currentIsDark ? "light" : "dark";
+      try {
+        localStorage.setItem("theme", next);
+      } catch {
+        // Ignore storage errors in restricted contexts.
+      }
+      return next;
+    });
+  }, []);
 
   return { isDark, toggleDarkMode };
 }

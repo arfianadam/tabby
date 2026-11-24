@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   getCachedFavicon,
   resolveFavicon,
@@ -21,6 +21,7 @@ const targetKey = (target: FaviconTarget) =>
 export const useFavicons = (list: FaviconTarget[]) => {
   const targets = useMemo(() => withSiblingFaviconUrls(list), [list]);
   const [resolved, setResolved] = useState<ResolvedMap>({});
+  const inFlightKeysRef = useRef<Set<string>>(new Set());
 
   // Drop entries for targets that no longer exist or whose URLs changed.
   useEffect(() => {
@@ -39,35 +40,49 @@ export const useFavicons = (list: FaviconTarget[]) => {
     });
   }, [targets]);
 
+  // Resolve each uncached target independently so fast hosts paint immediately
+  // without waiting behind slow or hanging domains.
   useEffect(() => {
-    const missing = targets.filter(
-      (target) =>
+    const missing = targets.filter((target) => {
+      const key = targetKey(target);
+      const flightKey = `${target.id}::${key}`;
+      return (
         target.url &&
-        resolved[target.id]?.key !== targetKey(target) &&
-        !getCachedFavicon(target),
-    );
+        resolved[target.id]?.key !== key &&
+        !getCachedFavicon(target) &&
+        !inFlightKeysRef.current.has(flightKey)
+      );
+    });
     if (!missing.length) {
       return;
     }
 
     let cancelled = false;
-    Promise.all(
-      missing.map(async (target) => ({
-        id: target.id,
-        key: targetKey(target),
-        icon: await resolveFavicon(target),
-      })),
-    ).then((results) => {
-      if (cancelled) {
-        return;
-      }
-      setResolved((prev) => {
-        const next = { ...prev };
-        results.forEach(({ id, key, icon }) => {
-          next[id] = { key, icon };
+    missing.forEach((target) => {
+      const key = targetKey(target);
+      const flightKey = `${target.id}::${key}`;
+      inFlightKeysRef.current.add(flightKey);
+      void resolveFavicon(target)
+        .then((icon) => {
+          if (cancelled) {
+            return;
+          }
+          setResolved((prev) => {
+            if (
+              prev[target.id]?.key === key &&
+              prev[target.id]?.icon === icon
+            ) {
+              return prev;
+            }
+            return {
+              ...prev,
+              [target.id]: { key, icon },
+            };
+          });
+        })
+        .finally(() => {
+          inFlightKeysRef.current.delete(flightKey);
         });
-        return next;
-      });
     });
 
     return () => {

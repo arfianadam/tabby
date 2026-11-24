@@ -189,8 +189,13 @@ const downloadFavicon = async (
   }
   for (const source of candidates.flatMap(buildSourcesForUrl)) {
     try {
+      const signal =
+        typeof AbortSignal !== "undefined" && "timeout" in AbortSignal
+          ? AbortSignal.timeout(8000)
+          : undefined;
       const response = await fetch(source, {
         mode: "cors",
+        signal,
       });
       if (!response.ok) {
         continue;

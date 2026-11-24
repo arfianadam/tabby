@@ -11,6 +11,7 @@ export interface Folder {
   id: string;
   name: string;
   icon?: string;
+  color?: string;
   createdAt: number;
   bookmarks: Bookmark[];
 }
@@ -18,6 +19,7 @@ export interface Folder {
 export interface Collection {
   id: string;
   name: string;
+  order?: number;
   createdAt: number;
   updatedAt: number;
   folders: Folder[];
